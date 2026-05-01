@@ -1,68 +1,88 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { invoiceApi } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import {
-  FileText, DollarSign, Clock, CheckCircle, TrendingUp, Plus,
-  ArrowUpRight, BarChart3, Users
+  TrendingUp, Plus, Search, Bell, ArrowRight, 
+  Clock, CheckCircle, AlertCircle, FileText,
+  UserPlus, PackagePlus, Zap
 } from 'lucide-react';
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-const StatCard = ({ title, value, sub, icon: Icon, color, trend, trendUp }) => (
-  <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)] flex flex-col justify-between relative overflow-hidden group hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all">
-    <div className="flex justify-between items-start mb-4">
-      <div>
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{title}</p>
-        <h3 className="text-3xl font-black text-slate-800 tracking-tight">{value}</h3>
-      </div>
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-        <Icon size={20} className="text-white" />
-      </div>
-    </div>
-    <div className="flex items-center gap-2 mt-2">
-      {trend && (
-        <span className={`text-xs font-bold px-2 py-1 rounded-md ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-          {trendUp ? '↑' : '↓'} {trend}
-        </span>
-      )}
-      {sub && <span className="text-xs font-medium text-slate-400">{sub}</span>}
-    </div>
-  </div>
-);
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [invoices, setInvoices] = useState([]);
-  const [stats, setStats] = useState({ total: 0, paid: 0, pending: 0, overdue: 0, revenue: 0 });
+  const [stats, setStats] = useState({ 
+    totalCount: 0, 
+    paidCount: 0, 
+    sentCount: 0, 
+    pendingCount: 0, 
+    overdueCount: 0,
+    totalRevenue: 0, 
+    pendingAmount: 0, 
+    overdueAmount: 0 
+  });
   const [loading, setLoading] = useState(true);
-
   const [chartData, setChartData] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data } = await invoiceApi.getAll({ limit: 100 });
-        const inv = data.invoices || [];
-        setInvoices(inv.slice(0, 5));
-        const paid = inv.filter(i => i.status === 'paid');
-        const pending = inv.filter(i => i.status === 'sent' || i.status === 'draft');
-        const overdue = inv.filter(i => i.status === 'overdue');
-        const revenue = paid.reduce((s, i) => s + (i.totalInINR || i.total || 0), 0);
+        const { data } = await invoiceApi.getAll({ limit: 500 });
+        const inv = Array.isArray(data) ? data : (data.invoices || []);
         
-        // Mock logic for charting connected to actual total revenue
-        const months = ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'];
-        const mockChart = months.map((m, i) => ({
-          name: m,
-          revenue: i === 5 ? (revenue || 42000) : Math.floor(Math.random() * 30000) + 10000
-        }));
-        setChartData(mockChart);
+        const paid = inv.filter(i => i.status?.toLowerCase() === 'paid');
+        const sent = inv.filter(i => i.status?.toLowerCase() === 'sent');
+        const pending = inv.filter(i => ['pending', 'sent', 'partial'].includes(i.status?.toLowerCase()));
+        const overdue = inv.filter(i => i.status?.toLowerCase() === 'overdue');
+        
+        const revenue = paid.reduce((s, i) => s + (i.total || 0), 0);
+        const pendAmt = pending.reduce((s, i) => s + (i.total || 0), 0);
+        const overAmt = overdue.reduce((s, i) => s + (i.total || 0), 0);
 
-        const pendingAmount = pending.reduce((s, i) => s + (i.total || 0), 0);
-        const overdueAmount = overdue.reduce((s, i) => s + (i.total || 0), 0);
-        
-        setStats({ total: inv.length, paid: paid.length, pending: pendingAmount, overdue: overdueAmount, revenue });
-      } catch {
-        /* empty */
+        setStats({
+          totalCount: inv.length,
+          paidCount: paid.length,
+          sentCount: sent.length,
+          pendingCount: pending.length,
+          overdueCount: overdue.length,
+          totalRevenue: revenue,
+          pendingAmount: pendAmt,
+          overdueAmount: overAmt
+        });
+
+        setInvoices(inv.slice(0, 5));
+
+        // Real Monthly Revenue Calculation
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const currentYear = new Date().getFullYear();
+        const last6Months = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date();
+          d.setMonth(d.getMonth() - i);
+          last6Months.push({
+            month: d.getMonth(),
+            year: d.getFullYear(),
+            name: monthNames[d.getMonth()],
+            revenue: 0
+          });
+        }
+
+        inv.forEach(i => {
+          const idate = new Date(i.invoiceDate);
+          const imonth = idate.getMonth();
+          const iyear = idate.getFullYear();
+          const target = last6Months.find(m => m.month === imonth && m.year === iyear);
+          if (target && ['paid', 'sent'].includes(i.status?.toLowerCase())) {
+            target.revenue += (i.total || 0);
+          }
+        });
+
+        setChartData(last6Months.map(m => ({ name: m.name, revenue: m.revenue })));
+
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
       } finally {
         setLoading(false);
       }
@@ -70,130 +90,236 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  const statusBadge = (status) => {
-    const s = status?.toLowerCase();
-    if (s === 'paid') return <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">Paid</span>;
-    if (s === 'draft') return <span className="bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">Draft</span>;
-    if (s === 'overdue') return <span className="bg-rose-100 text-rose-800 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">Overdue</span>;
-    return <span className="bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">{status || 'Pending'}</span>;
-  };
-
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  };
-
   if (loading) return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+    <div className="flex items-center justify-center h-screen bg-[#FAFAF8]">
+      <div className="w-10 h-10 border-4 border-[#95BF47]/20 border-t-[#95BF47] rounded-full animate-spin" />
     </div>
   );
 
   return (
-    <div className="p-8 fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Dashboard</h2>
-          <p className="text-slate-500 text-sm mt-0.5">Welcome back! Here's your overview.</p>
+    <div className="flex flex-col min-h-screen bg-[#FAFAF8] animate-fade-in">
+      
+      {/* PAGE HEADER */}
+      <header className="h-16 bg-white border-b border-[#E4E4E0] flex items-center justify-between px-8 sticky top-0 z-20">
+        <div className="page-header-left">
+          <h1 className="text-[26px] font-bold text-[#0C0E10] leading-tight font-heading">Dashboard</h1>
+          <p className="text-[13px] text-[#6B7280] mt-0.5 font-medium">Welcome back! Here's your overview.</p>
         </div>
-        <Link to="/invoices/new" className="bg-[#8B5CF6] text-white font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-purple-200 hover:bg-[#7C3AED] transition-all flex items-center gap-2">
-          <Plus size={18} /> New Invoice
-        </Link>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-        <StatCard title="Total Invoices" value={stats.total} icon={FileText} color="bg-purple-500" trend="12% from last month" trendUp={true} />
-        <StatCard title="Total Revenue" value={formatCurrency(stats.revenue)} icon={DollarSign} color="bg-emerald-500" trend="8% from last month" trendUp={true} />
-        <StatCard title="Pending Amount" value={formatCurrency(stats.pending)} icon={Clock} color="bg-amber-500" trend="5% from last month" trendUp={false} />
-        <StatCard title="Overdue Amount" value={formatCurrency(stats.overdue)} icon={CheckCircle} color="bg-rose-500" sub="Needs immediate attention" />
-      </div>
-
-      {/* Revenue Chart Section */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)] mb-8">
-        <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-          <TrendingUp size={20} className="text-purple-600" />
-          Revenue Overview
-        </h3>
-        <div className="h-[300px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dx={-10} tickFormatter={(val) => `₹${val/1000}k`} />
-              <Tooltip 
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}
-                formatter={(value) => [formatCurrency(value), 'Revenue']}
-              />
-              <Line type="monotone" dataKey="revenue" stroke="#8B5CF6" strokeWidth={4} dot={{ r: 4, fill: '#8B5CF6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6, fill: '#8B5CF6', strokeWidth: 0 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Recent Invoices */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)]">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <BarChart3 size={20} className="text-purple-600" />
-            Recent Invoices
-          </h3>
-          <Link to="/invoices" className="text-sm text-purple-600 font-bold hover:text-purple-700 flex items-center gap-1 hover:underline">
-            View all <ArrowUpRight size={16} />
+        <div className="flex items-center gap-3">
+          <Link to="/invoices/new" className="btn-green-sm ml-2 flex items-center gap-2 h-9 px-4 rounded-[5px] bg-[#95BF47] text-[#02172E] font-bold text-sm hover:bg-[#85AF37] transition-all">
+            <Plus size={16} strokeWidth={3} /> New Invoice
           </Link>
         </div>
+      </header>
 
-        {invoices.length === 0 ? (
-          <div className="text-center py-16 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 mt-4">
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm border border-slate-100">
-              <FileText size={32} className="text-slate-300" />
+      <div className="page-body p-6 px-8 max-w-[1600px] mx-auto w-full">
+        
+        {/* KPI BAND */}
+        <div className="bg-white border border-[#E4E4E0] rounded-[5px] flex mb-6 shadow-sm overflow-hidden divide-x divide-[#E4E4E0]">
+          <div className="flex-1 p-5 px-6">
+            <div className="kpi-label">Total Invoices</div>
+            <div className="kpi-value">{stats.totalCount}</div>
+            <div className="text-[12px] text-[#95BF47] font-bold mt-1.5 flex items-center gap-1">↑ 12% from last month</div>
+          </div>
+          <div className="flex-1 p-5 px-6">
+            <div className="kpi-label">Total Revenue</div>
+            <div className="kpi-value">{formatCurrency(stats.totalRevenue)}</div>
+            <div className="text-[12px] text-[#95BF47] font-bold mt-1.5 flex items-center gap-1">↑ 8% from last month</div>
+          </div>
+          <div className="flex-1 p-5 px-6">
+            <div className="kpi-label">Pending Amount</div>
+            <div className="kpi-value">{formatCurrency(stats.pendingAmount)}</div>
+            <div className="text-[12px] text-[#CC3A3A] font-bold mt-1.5 flex items-center gap-1">↓ 5% from last month</div>
+          </div>
+          <div className="flex-1 p-5 px-6">
+            <div className="kpi-label">Overdue Amount</div>
+            <div className="kpi-value">{formatCurrency(stats.overdueAmount)}</div>
+            <div className="text-[12px] text-[#CC3A3A] font-bold mt-1.5">Needs immediate attention</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6">
+          
+          {/* LEFT COLUMN */}
+          <div className="space-y-6">
+            
+            {/* REVENUE OVERVIEW */}
+            <div className="panel shadow-sm">
+              <div className="flex items-center justify-between p-6 pb-0">
+                <h3 className="text-[18px] font-bold text-[#0C0E10] font-heading">Revenue Overview</h3>
+                <div className="flex gap-4">
+                  {['3M', '6M', '1Y'].map(tab => (
+                    <button key={tab} className={`text-[12px] font-bold pb-1 border-b-2 transition-all ${tab === '3M' ? 'text-[#0C0E10] border-[#95BF47]' : 'text-[#6B7280] border-transparent hover:text-[#0C0E10]'}`}>
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="p-6 h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#95BF47" stopOpacity={0.12}/>
+                        <stop offset="95%" stopColor="#95BF47" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="0" vertical={false} stroke="#F4F4F1" />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#6B7280', fontSize: 11, fontWeight: 600 }} 
+                      dy={10} 
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#6B7280', fontSize: 11, fontWeight: 600 }} 
+                      tickFormatter={(val) => `₹${val/1000}k`} 
+                    />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '5px', border: '1px solid #E4E4E0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontFamily: 'Manrope' }}
+                      itemStyle={{ fontWeight: 700, color: '#0C0E10' }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#95BF47" 
+                      strokeWidth={2.5} 
+                      fillOpacity={1} 
+                      fill="url(#colorRev)" 
+                      animationDuration={1500}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">No invoices found.</h3>
-            <p className="text-slate-500 font-medium mb-6">Create your first one to see stats here!</p>
-            <Link to="/invoices/new" className="bg-purple-600 text-white font-bold text-sm px-8 py-3 rounded-xl shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all flex items-center gap-2 mx-auto w-max">
-              <Plus size={18} /> Create Invoice
-            </Link>
+
+            {/* RECENT INVOICES */}
+            <div className="panel shadow-sm">
+              <div className="flex items-center justify-between p-6 pb-4">
+                <h3 className="text-[18px] font-bold text-[#0C0E10] font-heading">Recent Invoices</h3>
+                <Link to="/invoices" className="text-[13px] font-bold text-[#95BF47] hover:underline flex items-center gap-1">
+                  View all <ArrowRight size={14} />
+                </Link>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-[#02172E] text-white">
+                    <tr>
+                      <th className="px-6 py-3.5 text-[11px] font-bold uppercase tracking-wider">Invoice No</th>
+                      <th className="px-6 py-3.5 text-[11px] font-bold uppercase tracking-wider">Client</th>
+                      <th className="px-6 py-3.5 text-[11px] font-bold uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3.5 text-[11px] font-bold uppercase tracking-wider">Amount</th>
+                      <th className="px-6 py-3.5 text-[11px] font-bold uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E4E4E0]">
+                    {invoices.map(inv => (
+                      <tr key={inv.id} className="hover:bg-[#F3F8E8] transition-all group cursor-pointer" onClick={() => navigate(`/invoices/${inv.id}/edit`)}>
+                        <td className="px-6 py-4 text-[14px] font-bold text-[#0C0E10]">{inv.invoiceNumber}</td>
+                        <td className="px-6 py-4 text-[14px] text-[#0C0E10]">{inv.clientName}</td>
+                        <td className="px-6 py-4 text-[13px] text-[#6B7280]">{formatDate(inv.invoiceDate)}</td>
+                        <td className="px-6 py-4 text-[14px] font-bold text-right text-[#0C0E10]">{formatCurrency(inv.total, inv.currency)}</td>
+                        <td className="px-6 py-4">
+                          <span className={`status-badge ${
+                            inv.status?.toLowerCase() === 'paid' ? 'status-paid' :
+                            inv.status?.toLowerCase() === 'sent' ? 'status-sent' :
+                            inv.status?.toLowerCase() === 'overdue' ? 'status-overdue' :
+                            'status-pending'
+                          }`}>
+                            {inv.status || 'Pending'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Invoice #</th>
-                  <th className="py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Client</th>
-                  <th className="py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Date</th>
-                  <th className="py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Amount</th>
-                  <th className="py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
-                  <th className="py-4 px-4"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.map(inv => (
-                  <tr key={inv._id} className="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
-                    <td className="py-4 px-4 font-bold text-slate-800">{inv.invoiceNumber}</td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-100 to-indigo-100 text-purple-700 flex items-center justify-center text-xs font-bold border border-purple-200 flex-shrink-0">
-                          {getInitials(inv.clientName)}
-                        </div>
-                        <span className="font-semibold text-slate-700 truncate max-w-[150px]">{inv.clientName || '-'}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-sm font-medium text-slate-500">{formatDate(inv.invoiceDate)}</td>
-                    <td className="py-4 px-4 font-bold text-slate-800">{formatCurrency(inv.total, inv.currency)}</td>
-                    <td className="py-4 px-4">{statusBadge(inv.status)}</td>
-                    <td className="py-4 px-4 text-right">
-                      <Link to={`/invoices/${inv._id}`} className="text-xs text-purple-600 font-bold hover:underline px-3 py-1.5 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+          {/* RIGHT COLUMN */}
+          <div className="space-y-6">
+            
+            {/* QUICK ACTIONS */}
+            <div className="panel shadow-sm p-6 py-8">
+              <h3 className="text-[18px] font-bold text-[#0C0E10] font-heading mb-6">Quick Actions</h3>
+              <div className="space-y-1">
+                <Link to="/invoices/new" className="flex items-center justify-between p-3.5 px-5 rounded-[5px] hover:bg-[#F3F8E8] transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-[5px] bg-[#F3F8E8] flex items-center justify-center text-[#95BF47] group-hover:bg-[#95BF47] group-hover:text-white transition-all">
+                      <Zap size={18} fill="currentColor" />
+                    </div>
+                    <span className="text-[14px] font-medium text-[#0C0E10]">Create New Invoice</span>
+                  </div>
+                  <ArrowRight size={16} className="text-[#6B7280] opacity-0 group-hover:opacity-100 transition-all" />
+                </Link>
+                <Link to="/clients" className="flex items-center justify-between p-3.5 px-5 rounded-[5px] hover:bg-[#F3F8E8] transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-[5px] bg-[#02172E]/5 flex items-center justify-center text-[#02172E] group-hover:bg-[#02172E] group-hover:text-white transition-all">
+                      <UserPlus size={18} />
+                    </div>
+                    <span className="text-[14px] font-medium text-[#0C0E10]">Add New Client</span>
+                  </div>
+                  <ArrowRight size={16} className="text-[#6B7280] opacity-0 group-hover:opacity-100 transition-all" />
+                </Link>
+                <Link to="/items" className="flex items-center justify-between p-3.5 px-5 rounded-[5px] hover:bg-[#F3F8E8] transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-[5px] bg-[#CC3A3A]/5 flex items-center justify-center text-[#CC3A3A] group-hover:bg-[#CC3A3A] group-hover:text-white transition-all">
+                      <PackagePlus size={18} />
+                    </div>
+                    <span className="text-[14px] font-medium text-[#0C0E10]">Add Item to Master</span>
+                  </div>
+                  <ArrowRight size={16} className="text-[#6B7280] opacity-0 group-hover:opacity-100 transition-all" />
+                </Link>
+              </div>
+
+              {/* INVOICE STATUS DONUT EQUIVALENT */}
+              <div className="mt-10 pt-8 border-t border-[#E4E4E0]">
+                <h3 className="text-[18px] font-bold text-[#0C0E10] font-heading mb-6">Invoice Status</h3>
+                <div className="h-2 w-full rounded-full bg-[#E4E4E0] overflow-hidden flex">
+                  <div style={{ width: `${(stats.paidCount / (stats.totalCount || 1)) * 100}%` }} className="bg-[#95BF47] h-full transition-all duration-1000"></div>
+                  <div style={{ width: `${(stats.sentCount / (stats.totalCount || 1)) * 100}%` }} className="bg-[#02172E] h-full transition-all duration-1000"></div>
+                  <div style={{ width: `${(stats.pendingCount / (stats.totalCount || 1)) * 100}%` }} className="bg-[#D97706] h-full transition-all duration-1000"></div>
+                  <div style={{ width: `${(stats.overdueCount / (stats.totalCount || 1)) * 100}%` }} className="bg-[#CC3A3A] h-full transition-all duration-1000"></div>
+                </div>
+                <div className="mt-6 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-2 h-2 rounded-[2px] bg-[#95BF47]"></div>
+                      <span className="text-[12px] text-[#6B7280] font-medium">Paid</span>
+                    </div>
+                    <span className="text-[12px] font-bold text-[#0C0E10]">{stats.paidCount}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-2 h-2 rounded-[2px] bg-[#02172E]"></div>
+                      <span className="text-[12px] text-[#6B7280] font-medium">Sent</span>
+                    </div>
+                    <span className="text-[12px] font-bold text-[#0C0E10]">{stats.sentCount}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-2 h-2 rounded-[2px] bg-[#D97706]"></div>
+                      <span className="text-[12px] text-[#6B7280] font-medium">Pending</span>
+                    </div>
+                    <span className="text-[12px] font-bold text-[#0C0E10]">{stats.pendingCount}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-2 h-2 rounded-[2px] bg-[#CC3A3A]"></div>
+                      <span className="text-[12px] text-[#6B7280] font-medium">Overdue</span>
+                    </div>
+                    <span className="text-[12px] font-bold text-[#0C0E10]">{stats.overdueCount}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

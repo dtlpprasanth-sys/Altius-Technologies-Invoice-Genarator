@@ -48,7 +48,7 @@ const Invoice = sequelize.define('Invoice', {
   
   // 4. Financials & Tax Engine
   currency: { type: DataTypes.STRING, defaultValue: 'INR' },
-  exchangeRate: { type: DataTypes.FLOAT, defaultValue: 1 },
+  exchangeRate: { type: DataTypes.STRING, defaultValue: '1' },
   taxInclusive: { type: DataTypes.BOOLEAN, defaultValue: false },
   roundingEnabled: { type: DataTypes.BOOLEAN, defaultValue: true },
   
@@ -56,6 +56,7 @@ const Invoice = sequelize.define('Invoice', {
   discountValue: { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
   discountType: { type: DataTypes.ENUM('fixed', 'percentage'), defaultValue: 'fixed' },
   additionalCharges: { type: DataTypes.JSONB, defaultValue: [] }, 
+  bankCharges: { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 }, 
   taxBreakdown: { type: DataTypes.JSONB, defaultValue: {} }, 
   taxTotal: { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
   total: { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },

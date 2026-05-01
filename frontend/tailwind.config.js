@@ -21,7 +21,9 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Manrope', 'Inter', 'system-ui', 'sans-serif'],
+        heading: ['Fraunces', 'serif'],
+        serif: ['Fraunces', 'serif'],
       },
       boxShadow: {
         'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',

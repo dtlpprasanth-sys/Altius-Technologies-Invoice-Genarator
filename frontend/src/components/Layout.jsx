@@ -1,14 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import { Outlet } from 'react-router-dom';
 
 const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  // Sync body class with sidebar state for global CSS access if needed
+  useEffect(() => {
+    if (!isSidebarOpen) {
+      document.body.classList.add('sidebar-collapsed');
+    } else {
+      document.body.classList.remove('sidebar-collapsed');
+    }
+  }, [isSidebarOpen]);
+
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] font-sans text-slate-900 transition-colors duration-300">
+    <div className="flex min-h-screen bg-[#FAFAF8] font-sans text-[#0C0E10]">
+      {/* SIDEBAR */}
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
-      <main className={`flex-1 min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
+      
+      {/* CONTENT AREA */}
+      <main className="content-area">
         <Outlet />
       </main>
     </div>

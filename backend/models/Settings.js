@@ -26,11 +26,12 @@ const Settings = sequelize.define('Settings', {
   iban: { type: DataTypes.STRING },
   swiftCode: { type: DataTypes.STRING },
   invoicePrefix: { type: DataTypes.STRING, defaultValue: 'INV' },
-  invoiceCounter: { type: DataTypes.INTEGER, defaultValue: 1 },
+  invoiceCounter: { type: DataTypes.STRING, defaultValue: '1' },
   ieCode: { type: DataTypes.STRING },
   cin: { type: DataTypes.STRING },
   website: { type: DataTypes.STRING },
   lutDetails: { type: DataTypes.TEXT },
+  fiscalYear: { type: DataTypes.STRING },
   softwareExportType: { type: DataTypes.STRING, defaultValue: 'Data Entry and conversion, Software processing, RBI Code: 907' }
 });
 

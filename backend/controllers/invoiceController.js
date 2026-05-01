@@ -1,375 +1,498 @@
-const Invoice = require('../models/Invoice');
-const Settings = require('../models/Settings');
+const { Invoice, Client, Settings } = require('../models');
 const { Op } = require('sequelize');
 const puppeteer = require('puppeteer');
-const path = require('path');
-const fs = require('fs');
 
-// Generate invoice number
-const generateInvoiceNumber = async (userId) => {
-  const settings = await Settings.findOne({ where: { userId } });
-  const prefix = settings?.invoicePrefix || 'INV';
-  const counter = settings?.invoiceCounter || 1;
-  const year = new Date().getFullYear();
-  const nextYear = year + 1;
-  const fyStr = `${String(year).slice(2)}-${String(nextYear).slice(2)}`;
-  const num = String(counter).padStart(3, '0');
-  const invoiceNumber = `${prefix}-${num}/${fyStr}`;
-
-  if (settings) {
-    await settings.update({ invoiceCounter: counter + 1 });
-  }
-  return invoiceNumber;
-};
-
-// @desc Get all invoices
 const getInvoices = async (req, res) => {
   try {
-    const { status, search, page = 1, limit = 10 } = req.query;
+    const { search, status } = req.query;
     const where = { userId: req.user.id };
-    if (status && status !== 'all') where.status = status;
+
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+
     if (search) {
       where[Op.or] = [
-        { invoiceNumber: { [Op.iLike]: `%${search}%` } },
-        { clientName: { [Op.iLike]: `%${search}%` } },
+        { invoiceNumber: { [Op.like]: `%${search}%` } },
+        { clientName: { [Op.like]: `%${search}%` } }
       ];
     }
 
-    const offset = (page - 1) * limit;
-    const { count, rows: invoices } = await Invoice.findAndCountAll({
+    const invoices = await Invoice.findAll({
       where,
-      order: [['createdAt', 'DESC']],
-      offset: Number(offset),
-      limit: Number(limit)
+      order: [['createdAt', 'DESC']]
     });
-
-    const formattedInvoices = invoices.map(inv => {
-      const plain = inv.get({ plain: true });
-      return { ...plain, _id: plain.id };
-    });
-
-    res.json({ invoices: formattedInvoices, total: count, page: Number(page), pages: Math.ceil(count / limit) });
+    res.json(invoices);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc Create invoice
 const createInvoice = async (req, res) => {
   try {
+    const { invoiceNumber } = req.body;
+    const existing = await Invoice.findOne({ where: { invoiceNumber, userId: req.user.id } });
+    if (existing) return res.status(400).json({ message: 'Invoice number already exists' });
+
+    const invoice = await Invoice.create({ ...req.body, userId: req.user.id });
+    
+    // Update counter in settings
     const settings = await Settings.findOne({ where: { userId: req.user.id } });
-    const invoiceNumber = await generateInvoiceNumber(req.user.id);
-    
-    const invoice = await Invoice.create({
-      ...req.body,
-      userId: req.user.id,
-      businessDetails: settings ? settings.toJSON() : {},
-      invoiceNumber: req.body.invoiceNumber || invoiceNumber,
-    });
-    
-    const plain = invoice.get({ plain: true });
-    res.status(201).json({ ...plain, _id: plain.id });
+    if (settings) {
+      const current = settings.invoiceCounter || '1';
+      const length = current.length;
+      const next = (parseInt(current, 10) + 1).toString().padStart(length, '0');
+      settings.invoiceCounter = next;
+      await settings.save();
+    }
+
+    res.status(201).json(invoice);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
-// @desc Get invoice by ID
 const getInvoiceById = async (req, res) => {
   try {
-    const invoice = await Invoice.findOne({ where: { id: req.params.id, userId: req.user.id } });
+    const invoice = await Invoice.findOne({
+      where: { id: req.params.id, userId: req.user.id }
+    });
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
-    
-    const plain = invoice.get({ plain: true });
-    res.json({ ...plain, _id: plain.id });
+    res.json(invoice);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc Update invoice
 const updateInvoice = async (req, res) => {
   try {
-    const invoice = await Invoice.findOne({ where: { id: req.params.id, userId: req.user.id } });
+    const invoice = await Invoice.findOne({
+      where: { id: req.params.id, userId: req.user.id }
+    });
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     
     await invoice.update(req.body);
-    
-    const plain = invoice.get({ plain: true });
-    res.json({ ...plain, _id: plain.id });
+    res.json(invoice);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
-// @desc Delete invoice
 const deleteInvoice = async (req, res) => {
   try {
-    const deleted = await Invoice.destroy({ where: { id: req.params.id, userId: req.user.id } });
-    if (!deleted) return res.status(404).json({ message: 'Invoice not found' });
+    const invoice = await Invoice.findOne({
+      where: { id: req.params.id, userId: req.user.id }
+    });
+    if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+    
+    await invoice.destroy();
     res.json({ message: 'Invoice deleted' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc Get next invoice number
 const getNextInvoiceNumber = async (req, res) => {
   try {
-    const invoiceNumber = await generateInvoiceNumber(req.user.id);
     const settings = await Settings.findOne({ where: { userId: req.user.id } });
-    if (settings) {
-      await settings.update({ invoiceCounter: Math.max(1, settings.invoiceCounter - 1) });
-    }
-    res.json({ invoiceNumber });
+    if (!settings) return res.json({ nextNumber: 'INV-001' });
+    
+    const prefix = settings.invoicePrefix || 'INV';
+    const counter = settings.invoiceCounter || '001';
+    const year = settings.fiscalYear ? `/${settings.fiscalYear}` : '';
+    res.json({ nextNumber: `${prefix}-${counter}${year}` });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc Download invoice as PDF
 const downloadInvoicePDF = async (req, res) => {
   let browser;
   try {
-    const invoice = await Invoice.findOne({ where: { id: req.params.id, userId: req.user.id } });
-    if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+    const invoice = await Invoice.findOne({
+      where: { id: req.params.id, userId: req.user.id }
+    });
+    if (!invoice) return res.status(404).send('Invoice not found');
 
     const html = generateInvoiceHTML(invoice);
-    
-    const chromePaths = [
-      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-    ];
-    const executablePath = chromePaths.find(p => fs.existsSync(p));
-
     browser = await puppeteer.launch({
-      headless: true,
-      executablePath: executablePath || undefined,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      headless: "new",
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1200, height: 1600 });
-    await page.setContent(html, { waitUntil: 'load' });
+    await page.setContent(html, { waitUntil: 'networkidle0' });
     
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
+      displayHeaderFooter: false,
       margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' },
       preferCSSPageSize: true
     });
 
     await browser.close();
     res.contentType('application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="Invoice_${invoice.invoiceNumber}.pdf"`);
-    res.send(pdf);
+    const safeFilename = `Invoice_${invoice.invoiceNumber.replace(/[/\\?%*:|"<>]/g, '_')}.pdf`;
+    res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+    res.send(Buffer.from(pdf));
   } catch (error) {
     if (browser) await browser.close();
     res.status(500).send(`Error generating PDF: ${error.message}`);
   }
 };
 
-const numberToWords = (num) => {
-  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-  if (num === 0) return 'Zero';
-  const convert = (n) => {
-    if (n < 20) return ones[n];
-    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
-    if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + convert(n % 100) : '');
-    if (n < 100000) return convert(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 ? ' ' + convert(n % 1000) : '');
-    if (n < 10000000) return convert(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 ? ' ' + convert(n % 100000) : '');
-    return convert(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 ? ' ' + convert(n % 10000000) : '');
+const numberToWords = (num, currency = 'INR') => {
+  const n = Number(num);
+  if (!n || isNaN(n)) return `ZERO ONLY`;
+  const ones = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
+  const tens = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
+  const convertIndian = (val) => {
+    if (val < 20) return ones[val];
+    if (val < 100) return tens[Math.floor(val / 10)] + (val % 10 ? ' ' + ones[val % 10] : '');
+    if (val < 1000) return ones[Math.floor(val / 100)] + ' HUNDRED' + (val % 100 ? ' ' + convertIndian(val % 100) : '');
+    if (val < 100000) return convertIndian(Math.floor(val / 1000)) + ' THOUSAND' + (val % 1000 ? ' ' + convertIndian(val % 1000) : '');
+    if (val < 10000000) return convertIndian(Math.floor(val / 100000)) + ' LAKH' + (val % 100000 ? ' ' + convertIndian(val % 100000) : '');
+    return convertIndian(Math.floor(val / 10000000)) + ' CRORE' + (val % 10000000 ? ' ' + convertIndian(val % 10000000) : '');
   };
-  const rupees = Math.floor(num);
-  let result = convert(rupees) + ' Rupees Only';
-  return result;
+
+  const convertInternational = (val) => {
+    if (val < 20) return ones[val];
+    if (val < 100) return tens[Math.floor(val / 10)] + (val % 10 ? ' ' + ones[val % 10] : '');
+    if (val < 1000) return ones[Math.floor(val / 100)] + ' HUNDRED' + (val % 100 ? ' ' + convertInternational(val % 100) : '');
+    if (val < 1000000) return convertInternational(Math.floor(val / 1000)) + ' THOUSAND' + (val % 1000 ? ' ' + convertInternational(val % 1000) : '');
+    if (val < 1000000000) return convertInternational(Math.floor(val / 1000000)) + ' MILLION' + (val % 1000000 ? ' ' + convertInternational(val % 1000000) : '');
+    return convertInternational(Math.floor(val / 1000000000)) + ' BILLION' + (val % 1000000000 ? ' ' + convertInternational(val % 1000000000) : '');
+  };
+
+  const convert = currency === 'INR' ? convertIndian : convertInternational;
+
+  const major = Math.floor(n);
+  const minor = Math.round((n - major) * 100);
+  
+  const getCurrencyLabels = (code) => {
+    const map = {
+      'INR': { major: ['RUPEE', 'RUPEES'], minor: ['PAISA', 'PAISE'] },
+      'USD': { major: ['DOLLAR', 'DOLLARS'], minor: ['CENT', 'CENTS'] },
+      'EUR': { major: ['EURO', 'EUROS'], minor: ['CENT', 'CENTS'] },
+      'GBP': { major: ['POUND', 'POUNDS'], minor: ['PENNY', 'PENCE'] }
+    };
+    return map[code] || { major: [code, code], minor: ['CENT', 'CENTS'] };
+  };
+
+  const labels = getCurrencyLabels(currency);
+  const majorLabel = major === 1 ? labels.major[0] : labels.major[1];
+  const minorLabel = minor === 1 ? labels.minor[0] : labels.minor[1];
+
+  let result = convert(major) + ' ' + majorLabel;
+  if (minor > 0) result += ' AND ' + convert(minor) + ' ' + minorLabel;
+  return result + ' ONLY';
 };
 
 const generateInvoiceHTML = (invoice) => {
-  const currencySymbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ' };
-  const symbol = currencySymbols[invoice.currency] || invoice.currency;
-  const fmt = (n) => Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
-  
-  const customization = invoice.customization || { color: '#2563eb' };
-  const primaryColor = customization.color;
+  const biz = invoice.business || invoice.businessDetails || {};
+  const clnt = invoice.client || invoice.clientDetails || {};
+  const items = invoice.items || [];
+  const terms = invoice.terms || [];
 
-  const itemRows = (invoice.items || []).map((item, i) => `
-    <tr class="item-row">
-      <td style="text-align: center; color: #64748b; font-size: 10px;">${i + 1}</td>
-      <td style="padding-left: 10px;">
-        <div style="font-weight: 700; color: #1e293b; font-size: 12px;">${item.name}</div>
-        ${item.description ? `<div style="font-size: 9px; color: #64748b; margin-top: 2px;">${item.description}</div>` : ''}
-      </td>
-      <td style="text-align: center;">${item.hsn || '-'}</td>
-      <td style="text-align: center;">${item.quantity} ${item.unit || 'pcs'}</td>
-      <td style="text-align: right;">${fmt(item.rate)}</td>
-      <td style="text-align: center;">${item.taxRate}%</td>
-      <td style="text-align: right; font-weight: 700; color: #1e293b;">${fmt(item.total)}</td>
+  const currency = invoice.currency || 'USD';
+  const sym = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency + ' ';
+  const fmt = (n) => Number(n || 0).toFixed(2);
+  const formatDate = (d) => {
+    if (!d) return '-';
+    const date = new Date(d);
+    const day = String(date.getDate()).padStart(2, '0');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${day}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
+
+  const toTitleCase = (str = '') => str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  const rawWords = numberToWords(invoice.total, currency);
+  const inWords = toTitleCase(rawWords.replace(/\s+only\s*$/i, ''));
+
+  const lutArn = biz.lutArn || biz.arnNumber || '';
+  const lutDate = biz.lutDate || biz.lutRefDate || '';
+  const lut = invoice.invoiceSubTitle || invoice.lutDetails || `SUPPLY MEANT FOR EXPORT UNDER BOND OR LETTER OF UNDERTAKING WITHOUT PAYMENT OF INTEGRATED TAX${lutArn ? `  LUT Ref: ARN – ${lutArn} dated ${formatDate(lutDate)}` : ''}`;
+
+  // Helper to prevent redundant address lines
+  const cityStateZip = [biz.city, biz.state].filter(Boolean).join(', ') + (biz.pincode ? ' – ' + biz.pincode : '');
+  const countryLine = biz.country || 'India';
+  
+  const headerLines = [];
+  const rawAddr = biz.address || biz.streetAddress || (biz.registeredOffice ? null : invoice.businessAddress) || '';
+  
+  // If the raw address doesn't already contain the city/state, add them as separate lines
+  headerLines.push(rawAddr);
+  if (cityStateZip && !rawAddr.includes(biz.city || '___') && !rawAddr.includes(biz.state || '___')) {
+    headerLines.push(cityStateZip);
+  }
+  if (countryLine && !rawAddr.includes(countryLine)) {
+    headerLines.push(countryLine);
+  }
+
+  const billedByLines = [
+    biz.address || biz.streetAddress || (biz.registeredOffice ? null : invoice.businessAddress),
+    [biz.city, biz.state].filter(Boolean).join(', ') + (biz.pincode ? ', ' + biz.pincode : ''),
+    biz.country
+  ].filter(Boolean);
+
+  const billedToLines = [
+    clnt.address || clnt.streetAddress || invoice.clientAddress,
+    [clnt.city, clnt.state].filter(Boolean).join(', ') + (clnt.pincode || clnt.postalCode ? ' ' + (clnt.pincode || clnt.postalCode) : ''),
+    clnt.country
+  ].filter(Boolean);
+
+  const poNoAndDate = invoice.poNoAndDate || '';
+  const softwareExportType = invoice.softwareExportType || '';
+
+  const itemRows = items.map((item, idx) => `
+    <tr style="font-size: 9pt;">
+      <td style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 8px 4px; text-align: center; color: #555;">${idx + 1}.</td>
+      <td style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 8px 8px;">${item.name || ''}</td>
+      <td style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 8px 4px; text-align: center;">${item.hsn || ''}</td>
+      <td style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 8px 4px; text-align: center;">${item.quantity || ''}</td>
+      <td style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 8px 4px; text-align: center;">${item.unit || 'per SKU'}</td>
+      <td style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 8px 6px; text-align: right;">${sym}${fmt(item.rate)}</td>
+      <td style="border-bottom: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: 700;">${sym}${fmt(item.amount)}</td>
     </tr>
   `).join('');
+
+  const totalsRows = [
+    { label: 'Bank Charges', v: `${sym}${fmt(invoice.bankCharges)}`, bold: false },
+    { label: `Total (${currency})`, v: `${sym}${fmt(invoice.total)}`, bold: false },
+    { label: currency === 'INR' ? 'Total (INR)' : 'Total Amount in (INR)', v: `₹${fmt(invoice.totalInINR)}`, bold: true }
+  ];
+
+  const bankDetails = [
+    { label: 'Account Name', val: biz.accountName || biz.businessName },
+    { label: 'Account Number', val: biz.accountNumber },
+    { label: 'IFSC', val: biz.ifscCode },
+    { label: 'IBAN', val: biz.iban },
+    { label: 'SWIFT Code', val: biz.swiftCode },
+    { label: 'Bank', val: biz.bankName }
+  ].filter(r => r.val);
 
   return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-  body { color: #1e293b; line-height: 1.5; font-size: 11px; background: white; padding: 40px; }
-  
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 2px solid ${primaryColor}; padding-bottom: 20px; }
-  .logo { max-height: 60px; max-width: 200px; object-fit: contain; }
-  .title-area h1 { font-size: 28px; font-weight: 800; color: ${primaryColor}; text-transform: uppercase; letter-spacing: -1px; }
-  .title-area p { color: #64748b; font-weight: 700; font-size: 14px; }
-
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px; }
-  .section-label { font-size: 9px; font-weight: 800; text-transform: uppercase; color: ${primaryColor}; margin-bottom: 8px; letter-spacing: 1px; }
-  .biz-name { font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
-  .biz-details { color: #475569; font-size: 10px; line-height: 1.6; }
-
-  .meta-grid { background: #f8fafc; border-radius: 16px; padding: 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; border: 1px solid #e2e8f0; }
-  .meta-item label { display: block; font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; }
-  .meta-item span { font-size: 12px; font-weight: 700; color: #1e293b; }
-
-  table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-  thead th { background: ${primaryColor}; color: white; padding: 12px 10px; text-align: left; font-size: 9px; text-transform: uppercase; font-weight: 700; }
-  td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; }
-
-  .summary-section { display: flex; justify-content: space-between; gap: 40px; }
-  .notes-area { flex: 1; }
-  .totals-area { width: 280px; }
-  
-  .total-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 11px; border-bottom: 1px dashed #e2e8f0; }
-  .total-row.grand { border-bottom: none; margin-top: 10px; background: ${primaryColor}; color: white; padding: 12px; border-radius: 8px; }
-  .total-row.grand label { font-size: 14px; font-weight: 800; }
-  .total-row.grand span { font-size: 18px; font-weight: 800; }
-
-  .words-box { background: #f8fafc; padding: 15px; border-radius: 12px; margin-top: 20px; font-size: 10px; border: 1px solid #e2e8f0; }
-  .words-box b { color: ${primaryColor}; text-transform: uppercase; font-size: 8px; display: block; margin-bottom: 4px; }
-
-  .footer { margin-top: 60px; display: flex; justify-content: space-between; align-items: flex-end; }
-  .bank-details { font-size: 9px; color: #64748b; }
-  .signature { text-align: right; }
-  .sig-line { border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 10px; font-weight: 800; font-size: 10px; text-transform: uppercase; width: 180px; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+  @page { margin: 0; size: A4; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #f3f4f6; -webkit-print-color-adjust: exact; margin: 0; }
+  .page { 
+    width: 794px; min-height: 1123px; 
+    padding: 32px 38px 28px; 
+    background: #fff; margin: 0 auto; 
+    display: flex; flex-direction: column; 
+    position: relative; page-break-after: always; 
+    box-sizing: border-box; 
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; 
+    font-size: 9.5pt; color: #000; 
+  }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .b-all { border: 1px solid #000; }
+  .b-b { border-bottom: 1px solid #000; }
+  .b-r { border-right: 1px solid #000; }
 </style>
 </head>
 <body>
-  <div class="header">
-    <div class="logo-area">
-      ${invoice.businessDetails?.logoUrl ? `<img src="${invoice.businessDetails.logoUrl}" class="logo">` : `<h2 style="font-size: 24px; font-weight: 800;">${invoice.businessDetails?.businessName || invoice.businessName}</h2>`}
+  <!-- PAGE 1 -->
+  <div class="page">
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+      <div>
+        ${invoice.logoUrl 
+          ? `<img src="${invoice.logoUrl}" style="max-width: 190px; max-height: 72px; object-fit: contain; display: block;">`
+          : `<div style="width: 120px; height: 60px; background: #e5e7eb;"></div>`
+        }
+      </div>
+      <div style="text-align: right; line-height: 1.5; font-size: 9pt;">
+        <div style="font-weight: 700; font-size: 11pt; letter-spacing: 0.03em; margin-bottom: 2px;">${invoice.businessName || biz.businessName}</div>
+        ${headerLines.map(l => `<div>${l}</div>`).join('')}
+        ${(biz.phone || invoice.phone) ? `<div>Phone: ${biz.phone || invoice.phone}</div>` : ''}
+        ${(invoice.businessGstin || biz.gstin) ? `<div>GSTIN: ${invoice.businessGstin || biz.gstin}</div>` : ''}
+      </div>
     </div>
-    <div class="title-area">
-      <h1>${invoice.invoiceTitle}</h1>
-      <p># ${invoice.invoiceNumber}</p>
+
+    <!-- Title + LUT -->
+    <div style="text-align: center; margin-bottom: 10px;">
+      <div style="font-size: 15pt; font-weight: 700; letter-spacing: 0.08em;">${invoice.invoiceTitle || 'Export Invoice'}</div>
+      <div style="font-size: 7pt; font-style: italic; line-height: 1.4; margin-top: 4px; color: #333;">${lut}</div>
     </div>
+
+    <!-- Outer Content Box -->
+    <div class="b-all">
+      <table>
+        <colgroup><col style="width: 62%;"><col style="width: 38%;"></colgroup>
+        <tbody>
+          <tr style="height: 25px;">
+            <td class="b-b b-r"></td>
+            <td class="b-b" style="text-align: right; padding-right: 10px; font-size: 10pt;">*</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table>
+        <colgroup><col style="width: 27%;"><col style="width: 35%;"><col style="width: 38%;"></colgroup>
+        <tbody>
+          <tr style="font-size: 9.5pt;">
+            <td class="b-r b-b" style="padding: 10px 10px; vertical-align: top;">
+              <div style="font-weight: 700; font-size: 9pt; color: #444; margin-bottom: 8px;">Invoice Details</div>
+              <div style="margin-bottom: 6px; font-size: 8pt;">
+                <span style="color: #6b7280;">Invoice No #  </span>
+                <span style="font-weight: 700;">${invoice.invoiceNumber}</span>
+              </div>
+              <div style="font-size: 8pt;">
+                <span style="color: #6b7280;">Invoice Date  </span>
+                <span style="font-weight: 700;">${formatDate(invoice.invoiceDate)}</span>
+              </div>
+            </td>
+            <td class="b-r b-b" style="padding: 10px 10px; vertical-align: top;">
+              <div style="font-weight: 700; font-size: 9pt; color: #444; margin-bottom: 8px;">Billed By</div>
+              <div style="font-weight: 700; font-size: 10pt; margin-bottom: 4px;">${invoice.businessName || biz.businessName}</div>
+              ${billedByLines.map(l => `<div style="font-size: 8.5pt; line-height: 1.4;">${l}</div>`).join('')}
+              ${(invoice.businessGstin || biz.gstin) ? `
+              <div style="margin-top: 5px; font-size: 8.5pt;">
+                <span style="color: #6b7280;">GSTIN: </span>
+                <span>${invoice.businessGstin || biz.gstin}</span>
+              </div>` : ''}
+              ${biz.satelliteStation ? `
+              <div style="margin-top: 3px; font-size: 8.5pt;">
+                <span style="color: #6b7280;">Satellite Station: </span>
+                <span>${biz.satelliteStation}</span>
+              </div>` : ''}
+            </td>
+            <td class="b-b" style="padding: 10px 10px; vertical-align: top;">
+              <div style="font-weight: 700; font-size: 9pt; color: #444; margin-bottom: 8px;">Billed To</div>
+              <div style="font-weight: 700; font-size: 10pt; margin-bottom: 4px;">${invoice.clientName || clnt.name}</div>
+              ${billedToLines.map(l => `<div style="font-size: 8.5pt; line-height: 1.4;">${l}</div>`).join('')}
+              <div style="margin-top: 6px; font-size: 8.5pt; line-height: 1.6;">
+                <div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="color: #6b7280; font-weight: 400; margin-right: 4px;">Export Currency:</span><span style="font-weight: 700; color: #000;">${currency}</span></div>
+                <div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="color: #6b7280; font-weight: 400; margin-right: 4px;">Conversion Rate:</span><span style="font-weight: 700; color: #000;">${fmt(invoice.exchangeRate)} INR</span></div>
+                ${poNoAndDate ? `<div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="color: #6b7280; font-weight: 400; margin-right: 4px;">Purchase Order No &amp; Date:</span><span style="font-weight: 700; color: #000;">${poNoAndDate}</span></div>` : ''}
+                ${softwareExportType ? `<div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="color: #6b7280; font-weight: 400; margin-right: 4px;">Type of Software Export:</span><span style="font-weight: 700; color: #000;">${softwareExportType}</span></div>` : ''}
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table>
+        <colgroup>
+          <col style="width: 3%;"><col style="width: 42%;"><col style="width: 10%;"><col style="width: 9%;"><col style="width: 11%;"><col style="width: 12%;"><col style="width: 13%;">
+        </colgroup>
+        <thead>
+          <tr style="height: 20px;"><td colspan="7" class="b-b"></td></tr>
+          <tr style="font-size: 9.5pt; font-weight: 700;">
+            <th class="b-b b-r" style="padding: 8px 4px; text-align: center;"></th>
+            <th class="b-b b-r" style="padding: 8px 4px; text-align: left;">Item</th>
+            <th class="b-b b-r" style="padding: 8px 4px; text-align: center;">HSN/SAC</th>
+            <th class="b-b b-r" style="padding: 8px 4px; text-align: center;">Quantity</th>
+            <th class="b-b b-r" style="padding: 8px 4px; text-align: center;">UOM</th>
+            <th class="b-b b-r" style="padding: 8px 4px; text-align: right;">Rate</th>
+            <th class="b-b" style="padding: 8px 4px; text-align: right;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemRows}
+          <tr style="height: 22px;">
+            <td class="b-b" colspan="7"></td>
+          </tr>
+          ${totalsRows.map(r => `
+            <tr>
+              <td colspan="4" class="b-b b-r"></td>
+              <td colspan="2" class="b-b b-r" style="padding: 6px 8px; text-align: right; color: #333; font-weight: 400; font-size: 8.5pt; white-space: nowrap;">${r.label}</td>
+              <td class="b-b" style="padding: 6px 8px; text-align: right; font-weight: ${r.bold ? '700' : '400'}; font-size: 9.5pt; white-space: nowrap;">${r.v}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <table>
+        <tbody>
+          <tr>
+            <td class="b-r" style="padding: 10px 12px; vertical-align: top; width: 50%;">
+              <div style="font-size: 8.5pt;"><strong>Total (in words) :</strong><span style="font-weight: 400;"> ${inWords} Only</span></div>
+            </td>
+            <td style="padding: 10px 12px; text-align: center; vertical-align: top; width: 50%;">
+              <div style="font-weight: 700; font-size: 9pt; margin-bottom: 6px;">For ${invoice.businessName || biz.businessName}</div>
+              <div style="min-height: 55px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+                ${invoice.signatureUrl ? `<img src="${invoice.signatureUrl}" style="max-height: 55px; max-width: 75%; object-fit: contain; mix-blend-mode: multiply;">` : ''}
+              </div>
+              <div style="padding-top: 4px;">
+                <div style="font-size: 7.5pt; color: #6b7280;">Authorized Signatory</div>
+                <div style="font-size: 9pt; font-weight: 700;">Authorised Signatory</div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+        </div>
   </div>
 
-  <div class="info-grid">
-    <div>
-      <div class="section-label">Billed By</div>
-      <div class="biz-name">${invoice.businessDetails?.businessName || invoice.businessName}</div>
-      <div class="biz-details">
-        ${invoice.businessDetails?.address || invoice.businessAddress}<br>
-        Email: ${invoice.businessDetails?.email || ''} | Phone: ${invoice.businessDetails?.phone || ''}<br>
-        <b>GSTIN: ${invoice.businessDetails?.gstin || ''}</b>
-      </div>
-    </div>
-    <div style="text-align: right;">
-      <div class="section-label">Billed To</div>
-      <div class="biz-name">${invoice.clientName}</div>
-      <div class="biz-details">
-        ${invoice.clientDetails?.billingAddress?.address1 || invoice.clientAddress}<br>
-        ${invoice.clientDetails?.billingAddress?.city || ''}, ${invoice.clientDetails?.billingAddress?.state || ''}<br>
-        <b>GSTIN: ${invoice.clientDetails?.gstin || ''}</b>
-      </div>
-    </div>
-  </div>
+  <!-- PAGE 2 -->
+  <div class="page">
+    <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 20px;">
+      <tbody>
+        <tr>
+          <td class="b-r" style="padding: 16px 18px; vertical-align: top; width: 50%;">
+            <div style="font-weight: 700; font-size: 10pt; margin-bottom: 10px;">Terms and Conditions</div>
+            <ol style="padding-left: 16px; margin: 0; font-size: 9pt; line-height: 1.7; list-style-type: decimal; list-style-position: inside;">
+              ${terms.map(t => `<li style="margin-bottom: 6px; padding-left: 4px;">${t.text}</li>`).join('')}
+            </ol>
+          </td>
+          <td style="padding: 16px 18px; vertical-align: top; width: 50%;">
+            <div style="font-weight: 700; font-size: 10pt; margin-bottom: 10px;">Bank Details</div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9pt;">
+              <tbody>
+                ${bankDetails.map(r => `
+                  <tr>
+                    <td style="padding: 4px 0; color: #6b7280; font-weight: 400; width: 130px; vertical-align: top;">${r.label}</td>
+                    <td style="padding: 4px 0; font-weight: 700; color: #000; vertical-align: top;">${r.val}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
-  <div class="meta-grid">
-    <div class="meta-item">
-      <label>Date of Issue</label>
-      <span>${formatDate(invoice.invoiceDate)}</span>
-    </div>
-    <div class="meta-item">
-      <label>Due Date</label>
-      <span>${formatDate(invoice.dueDate)}</span>
-    </div>
-    <div class="meta-item">
-      <label>PO / Reference</label>
-      <span>${invoice.referenceNumber || '-'}</span>
-    </div>
-    <div class="meta-item">
-      <label>Currency</label>
-      <span>${invoice.currency}</span>
-    </div>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th style="width: 30px;">#</th>
-        <th>Item Description</th>
-        <th style="width: 80px; text-align: center;">HSN</th>
-        <th style="width: 60px; text-align: center;">Qty</th>
-        <th style="width: 100px; text-align: right;">Rate</th>
-        <th style="width: 60px; text-align: center;">Tax</th>
-        <th style="width: 120px; text-align: right;">Amount</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${itemRows}
-    </tbody>
-  </table>
-
-  <div class="summary-section">
-    <div class="notes-area">
-      <div class="section-label">Notes & Terms</div>
-      <div style="font-size: 10px; color: #64748b;">${invoice.notes || 'No notes provided.'}</div>
-      
-      <div class="words-box">
-        <b>Amount in words</b>
-        ${numberToWords(invoice.total)}
+    <div style="width: 100%; padding-top: 12px; font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;">
+      <div style="border-top: 3px solid #000; margin-bottom: 8px;"></div>
+      <div style="text-align: center; font-size: 9.5pt; font-weight: 700; margin-bottom: 5px; line-height: 1.4;">
+        Regd office : ${biz.registeredOffice || biz.address || invoice.businessAddress || ''}
       </div>
-
-      <div class="bank-details" style="margin-top: 30px;">
-        <div class="section-label">Bank Details</div>
-        Bank: ${invoice.businessDetails?.bankName || '-'}<br>
-        A/C: ${invoice.businessDetails?.accountNumber || '-'}<br>
-        IFSC: ${invoice.businessDetails?.ifscCode || '-'}
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9pt; margin-bottom: 2px;">
+        <div style="text-align: center; white-space: nowrap;">
+          <span style="color: #374151; font-weight: 400;">PAN: </span>
+          <span style="font-weight: 700; color: #000;">${biz.pan || invoice.businessPan || ''}</span>
+        </div>
+        <div style="text-align: center; white-space: nowrap;">
+          <span style="color: #374151; font-weight: 400;">IE Code : </span>
+          <span style="font-weight: 700; color: #000;">${biz.ieCode || invoice.ieCode || ''}</span>
+        </div>
+        <div style="text-align: center; white-space: nowrap;">
+          <span style="color: #374151; font-weight: 400;">CIN: </span>
+          <span style="font-weight: 700; color: #000;">${biz.cin || invoice.cin || ''}</span>
+        </div>
       </div>
-    </div>
-    <div class="totals-area">
-      <div class="total-row">
-        <label>Subtotal</label>
-        <span>${symbol} ${fmt(invoice.subtotal)}</span>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9pt; margin-bottom: 2px;">
+        <div style="text-align: center; white-space: nowrap;">
+          <span style="color: #374151; font-weight: 400;">Email :</span>
+          <span style="font-weight: 700; color: #000;">${biz.email || ''}</span>
+        </div>
+        <div style="text-align: center; white-space: nowrap; font-weight: 700;">
+          ${(biz.website || '').replace(/^https?:\/\//, '')}
+        </div>
+        <div style="text-align: center; white-space: nowrap;">
+          <span style="color: #374151; font-weight: 400;">Tel : </span>
+          <span style="font-weight: 700; color: #000;">${biz.telephone || invoice.telephone || biz.phone || invoice.phone || ''}</span>
+        </div>
       </div>
-      <div class="total-row">
-        <label>Tax (GST)</label>
-        <span>${symbol} ${fmt(invoice.taxTotal)}</span>
-      </div>
-      ${invoice.shippingCharges > 0 ? `
-      <div class="total-row">
-        <label>Shipping</label>
-        <span>${symbol} ${fmt(invoice.shippingCharges)}</span>
-      </div>` : ''}
-      <div class="total-row grand">
-        <label>Grand Total</label>
-        <span>${symbol} ${fmt(invoice.total)}</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="footer">
-    <div style="font-size: 8px; color: #94a3b8;">
-      Generated by InvoiceFlow • professional invoicing software
-    </div>
-    <div class="signature">
-      <div style="height: 50px;">
-        ${(invoice.signature?.image || invoice.businessDetails?.signatureUrl) ? `<img src="${invoice.signature?.image || invoice.businessDetails.signatureUrl}" style="max-height: 50px;">` : ''}
-      </div>
-      <div class="sig-line">${invoice.signature?.label || 'Authorized Signatory'}</div>
     </div>
   </div>
 </body>

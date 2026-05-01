@@ -1,31 +1,33 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { clientApi } from '../services/api';
 import { 
-  Plus, Trash2, Edit2, X, Check, Users, MapPin, 
-  ShieldCheck, Phone, Mail, Landmark, ChevronDown, ChevronRight
+  Plus, Trash2, Edit3, X, Check, Users, MapPin, 
+  ShieldCheck, Phone, Mail, Landmark, ChevronDown, ChevronRight,
+  MoreHorizontal, Search, ExternalLink, Globe, LayoutGrid
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import ClientRegistrationModal from '../components/ClientRegistrationModal';
-
-const emptyClient = {
-  clientType: 'Business', name: '', displayName: '', clientCode: '', logoUrl: '',
-  primaryContactName: '', email: '', phone: '', website: '',
-  billingAddress: { address1: '', city: '', state: '', country: 'India', pincode: '' },
-  gstin: '', panNumber: '', taxType: 'GST',
-  preferredCurrency: 'INR', paymentTerms: 'Net 30'
-};
 
 const Clients = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchClients = async () => {
     setLoading(true);
-    try { const { data } = await clientApi.getAll(); setClients(data); }
-    catch { toast.error('Failed to load clients'); }
-    finally { setLoading(false); }
+    try { 
+      const { data } = await clientApi.getAll(); 
+      setClients(data); 
+    }
+    catch { 
+      toast.error('Failed to load clients'); 
+    }
+    finally { 
+      setLoading(false); 
+    }
   };
 
   useEffect(() => { fetchClients(); }, []);
@@ -40,97 +42,151 @@ const Clients = () => {
     setIsClientModalOpen(true);
   };
 
+  const handleDelete = async (id, name) => {
+    if (window.confirm(`Delete client "${name}"?`)) {
+      try {
+        await clientApi.delete(id);
+        toast.success('Client deleted successfully');
+        fetchClients();
+      } catch {
+        toast.error('Failed to delete client');
+      }
+    }
+  };
+
+  const filteredClients = clients.filter(c => 
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.email && c.email.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#FAFAF8]">
+      <div className="w-10 h-10 border-4 border-[#95BF47]/20 border-t-[#95BF47] rounded-full animate-spin" />
+    </div>
+  );
 
   return (
-    <div className="p-10 bg-[#F8F9FD] min-h-screen animate-fade-in">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-12">
-          <div>
-            <h2 className="text-4xl font-black text-slate-800 tracking-tight">Clients</h2>
-            <p className="text-slate-400 font-bold mt-1">Manage your professional relationships and global tax compliance</p>
-          </div>
-          <button 
-            onClick={openCreate} 
-            className="bg-[#8B5CF6] text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-purple-100 flex items-center gap-3 hover:scale-[1.02] transition-all active:scale-[0.98]"
-          >
-            <Plus size={20}/> Add New Client
+    <div className="flex flex-col min-h-screen bg-[#FAFAF8] animate-fade-in">
+      
+      {/* PAGE HEADER */}
+      <header className="h-16 bg-white border-b border-[#E4E4E0] flex items-center justify-between px-8 sticky top-0 z-20">
+        <div className="page-header-left">
+          <h1 className="text-[26px] font-bold text-[#0C0E10] leading-tight font-heading">Clients</h1>
+          <p className="text-[13px] text-[#6B7280] mt-0.5 font-medium">Manage your professional relationships and global tax compliance</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button onClick={openCreate} className="btn-green-sm ml-2 flex items-center gap-2 h-9 px-4 rounded-[5px] bg-[#95BF47] text-[#02172E] font-bold text-sm hover:bg-[#85AF37] transition-all">
+            <Plus size={16} strokeWidth={3} /> Add New Client
           </button>
         </div>
+      </header>
 
-
-
-        <ClientRegistrationModal 
-          isOpen={isClientModalOpen} 
-          onClose={() => {
-            setIsClientModalOpen(false);
-            setEditingClient(null);
-          }} 
-          editingClient={editingClient}
-          onSuccess={fetchClients}
-        />
-
-        {/* Clients Grid */}
-        {loading ? (
-          <div className="flex justify-center py-48"><div className="w-16 h-16 border-4 border-[#8B5CF6] border-t-transparent rounded-full animate-spin"/></div>
-        ) : clients.length === 0 ? (
-          <div className="bg-white rounded-[3rem] border-4 border-dashed border-slate-100 p-32 text-center">
-            <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 text-slate-200">
-              <Users size={48}/>
-            </div>
-            <h3 className="text-2xl font-black text-slate-800">No clients registered yet</h3>
-            <p className="text-slate-400 font-bold mt-2 max-w-sm mx-auto leading-relaxed">Start by adding your first client to create professional tax-ready invoices.</p>
-            <button onClick={openCreate} className="bg-[#8B5CF6] text-white font-black mt-10 inline-flex items-center gap-3 px-10 py-4 rounded-2xl shadow-xl shadow-purple-100 hover:scale-[1.02] transition-all">
-              <Plus size={20}/> Add Your First Client
-            </button>
+      {/* PAGE BODY */}
+      <div className="page-body p-8 px-8 max-w-[1400px] mx-auto w-full">
+        
+        {/* CONTROL BAR */}
+        <div className="control-bar h-[52px] bg-white border border-[#E4E4E0] rounded-[5px] flex items-center justify-between px-5 mb-6 shadow-sm">
+          <div className="filter-tabs flex items-center gap-6 h-full">
+            <div className="filter-tab active h-full flex items-center text-[13px] font-bold text-[#0C0E10] border-b-2 border-[#95BF47] cursor-pointer px-1">Active Clients</div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pb-20">
-            {clients.map(c => (
-              <div key={c._id} className="bg-white border border-slate-50 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-300 group relative">
-                <div className="absolute top-6 right-6 flex gap-2 translate-x-10 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500">
-                  <button onClick={()=>handleEdit(c)} className="w-10 h-10 flex items-center justify-center bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-600 hover:text-white transition-all"><Edit2 size={16}/></button>
-                  <button onClick={()=>{ if(window.confirm(`Delete ${c.name}?`)) clientApi.delete(c._id).then(fetchClients) }} className="w-10 h-10 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"><Trash2 size={16}/></button>
-                </div>
-                
-                <div className="flex items-center gap-5 mb-8">
-                  <div className="w-16 h-16 bg-[#1A1C2E] rounded-[1.25rem] flex items-center justify-center text-white text-2xl font-black shadow-lg">
-                    {c.name.charAt(0).toLowerCase()}
-                  </div>
-                  <div>
-                    <h4 className="font-black text-slate-800 text-xl leading-tight">{c.name}</h4>
-                    <span className="text-[10px] font-black uppercase text-slate-300 tracking-widest">{c.clientCode || 'Standard Client'}</span>
-                  </div>
-                </div>
+          <div className="search-box flex items-center bg-white border border-[#E4E4E0] rounded-[5px] w-[300px] h-9 px-3 transition-all focus-within:border-[#95BF47] focus-within:ring-4 focus-within:ring-[#95BF47]/10">
+            <Search size={16} className="text-[#6B7280] shrink-0" />
+            <input 
+              type="text" 
+              className="ml-2 bg-transparent border-none outline-none text-[13px] text-[#0C0E10] w-full placeholder:text-[#6B7280]" 
+              placeholder="Search by name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
 
-                <div className="space-y-4 pt-6 border-t border-slate-50">
-                  <div className="flex items-center gap-4 text-slate-500 font-bold">
-                    <Mail size={16} className="text-slate-300"/>
-                    <span className="text-sm truncate">{c.email || 'No email registered'}</span>
-                  </div>
-                  <div className="flex items-center gap-4 text-slate-500 font-bold">
-                    <Phone size={16} className="text-slate-300"/>
-                    <span className="text-sm">{c.phone || 'No contact provided'}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <ShieldCheck size={16} className="text-slate-300"/>
-                    <span className="text-xs font-black bg-slate-50 text-slate-400 px-3 py-1.5 rounded-lg uppercase tracking-wider">GST: {c.gstin || 'UNREGISTERED'}</span>
-                  </div>
-                </div>
-
-                <div className="mt-8 flex items-center justify-between pt-6 border-t border-slate-50">
-                  <div className="flex gap-2">
-                    <div className="px-3 py-1.5 bg-purple-50 rounded-lg text-[10px] font-black text-purple-600 uppercase tracking-widest">{c.preferredCurrency || 'INR'}</div>
-                    <div className="px-3 py-1.5 bg-slate-50 rounded-lg text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      {c.defaultDueDate ? `NET ${c.defaultDueDate}` : 'DUE ON RECEIPT'}
+        {/* CLIENTS GRID */}
+        {filteredClients.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
+            {filteredClients.map(c => (
+              <div key={c.id} className="client-card panel shadow-sm hover:shadow-md transition-all group flex flex-col min-h-[220px]">
+                <div className="p-6 flex-1">
+                  <div className="flex items-start justify-between mb-5">
+                    <div className="w-12 h-12 bg-[#02172E] rounded-[5px] flex items-center justify-center text-white text-[18px] font-bold shadow-lg shadow-navy/10 group-hover:scale-105 transition-transform">
+                      {c.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => handleEdit(c)}
+                        className="w-8 h-8 flex items-center justify-center text-[#6B7280] hover:text-[#95BF47] hover:bg-[#F3F8E8] rounded-[3px] transition-all"
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(c.id, c.name)}
+                        className="w-8 h-8 flex items-center justify-center text-[#6B7280] hover:text-[#CC3A3A] hover:bg-[#CC3A3A]/10 rounded-[3px] transition-all"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
-                  <ChevronRight size={18} className="text-slate-200 group-hover:text-purple-300 transition-colors"/>
+                  
+                  <h4 className="font-heading text-[18px] font-bold text-[#0C0E10] mb-1 truncate">{c.name}</h4>
+                  <div className="text-[11px] font-bold text-[#95BF47] uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                    <ShieldCheck size={12} /> {c.clientType || 'Business'}
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-2.5 text-[#6B7280]">
+                      <Mail size={14} className="shrink-0" />
+                      <span className="text-[13px] truncate font-medium">{c.email || 'No email registered'}</span>
+                    </div>
+                    <div className="flex items-center gap-2.5 text-[#6B7280]">
+                      <Globe size={14} className="shrink-0" />
+                      <span className="text-[13px] truncate font-medium">{c.billingAddress?.country || 'No address'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 bg-[#FAFAF8] border-t border-[#E4E4E0] flex items-center justify-between rounded-b-[5px]">
+                  <span className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">
+                    {c.clientCode || 'STD-CLIENT'}
+                  </span>
+                  <Link 
+                    to={`/invoices?search=${encodeURIComponent(c.name)}`}
+                    className="text-[#95BF47] hover:text-[#85AF37] transition-colors flex items-center gap-1 text-[13px] font-bold"
+                  >
+                    View Invoices <ChevronRight size={14} />
+                  </Link>
                 </div>
               </div>
             ))}
+
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-32 bg-white rounded-[5px] border border-[#E4E4E0] shadow-sm">
+            <div className="w-20 h-20 bg-[#FAFAF8] rounded-full flex items-center justify-center text-[#D0D0CA] mb-6">
+              <Users size={40} />
+            </div>
+            <h3 className="text-[22px] font-bold text-[#0C0E10] font-heading">No clients found</h3>
+            <p className="text-[14px] text-[#6B7280] mt-1 max-w-[360px] text-center">
+              {searchQuery ? "Try adjusting your search filters." : "Start by adding your first client to create professional, tax-ready invoices."}
+            </p>
+            {!searchQuery && (
+              <button onClick={openCreate} className="btn-primary mt-8 h-12 px-10">
+                Register Your First Client
+              </button>
+            )}
           </div>
         )}
       </div>
+
+      {/* MODAL: CLIENT REGISTRATION */}
+      <ClientRegistrationModal 
+        isOpen={isClientModalOpen} 
+        onClose={() => {
+          setIsClientModalOpen(false);
+          setEditingClient(null);
+        }} 
+        editingClient={editingClient}
+        onSuccess={fetchClients}
+      />
     </div>
   );
 };

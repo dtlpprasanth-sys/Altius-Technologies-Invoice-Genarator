@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InvoiceFlow — B2B Invoice Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600;1,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --green-primary:#95BF47;
+  --green-hover:#85AF37;
+  --green-subtle:#F3F8E8;
+  --green-muted:rgba(149,191,71,0.12);
+  --navy:#02172E;
+  --navy-glass:rgba(2,23,46,0.72);
+  --black:#0C0E10;
+  --white:#FFFFFF;
+  --red:#CC3A3A;
+  --amber:#D97706;
+  --border:#E4E4E0;
+  --border-strong:#D0D0CA;
+  --muted:#6B7280;
+  --surface:#FAFAF8;
+  --surface-raised:#F5F5F2;
+  --sidebar-expanded:220px;
+  --sidebar-collapsed:56px;
+  --radius:5px;
+  --radius-sm:3px;
+  --radius-lg:8px;
+}
+
+html,body{height:100%;font-family:'Manrope',sans-serif;background:var(--surface);color:var(--black);-webkit-font-smoothing:antialiased}
+
+/* ===== SCREEN SYSTEM ===== */
+.screen{display:none;height:100vh;width:100%}
+.screen.active{display:flex}
+
+/* ===== LOGIN PAGE ===== */
+#screen-login{flex-direction:column}
+.login-wrap{display:flex;flex:1;overflow:hidden}
+.login-left{width:42%;background:var(--navy);display:flex;flex-direction:column;padding:32px;position:relative;overflow:hidden}
+.login-right{width:58%;background:#fff;display:flex;flex-direction:column;padding:24px 32px}
+
+.login-logo{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.login-logo .bolt{color:var(--green-primary);font-size:20px}
+.login-logo span{font-family:'Manrope',sans-serif;font-size:11px;font-weight:700;color:#fff;letter-spacing:3px;text-transform:uppercase}
+.login-accent-line{width:40px;height:2px;background:var(--green-primary);margin-bottom:48px}
+
+.login-hero{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:320px}
+.login-hero h1{font-family:'Fraunces',serif;font-size:52px;font-weight:700;color:#fff;line-height:1.05;margin-bottom:20px}
+.login-hero h1 em{color:var(--green-primary);font-style:italic}
+.login-hero p{font-size:15px;color:rgba(255,255,255,0.5);line-height:1.7;max-width:280px}
+
+.login-tiles{display:flex;gap:8px;padding-bottom:32px;align-items:flex-end}
+.tile-1{width:160px;height:72px;background:var(--red);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tile-stack{display:flex;flex-direction:column;gap:8px}
+.tile-2{width:80px;height:80px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:var(--radius);display:flex;align-items:center;justify-content:center}
+.tile-3{width:80px;height:80px;background:var(--green-primary);border-radius:var(--radius);display:flex;align-items:center;justify-content:center}
+.tile-icon{font-size:24px}
+.login-copy{font-size:11px;color:rgba(255,255,255,0.25);font-family:'Manrope',sans-serif}
+
+.login-right-header{display:flex;justify-content:flex-end}
+.support-link{font-size:13px;color:var(--muted);text-decoration:none;cursor:pointer}
+.support-link:hover{color:var(--black)}
+
+.login-form-wrap{flex:1;display:flex;align-items:center;justify-content:center}
+.login-form{width:100%;max-width:400px}
+.login-form-bolt{font-size:28px;display:block;text-align:center;margin-bottom:16px;color:var(--green-primary)}
+.login-form h2{font-family:'Fraunces',serif;font-size:30px;font-weight:700;color:var(--black);text-align:center}
+.login-form .sub{font-size:14px;color:var(--muted);text-align:center;margin-top:4px;margin-bottom:40px}
+
+.micro-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+
+.underline-input{width:100%;height:48px;border:none;border-bottom:1px solid var(--border);border-radius:0;font-family:'Manrope',sans-serif;font-size:14px;color:var(--black);background:transparent;outline:none;padding:0 4px;transition:border-color 0.15s,box-shadow 0.15s;position:relative}
+.underline-input::placeholder{color:var(--muted)}
+.underline-input:focus{border-bottom:2px solid var(--green-primary);box-shadow:0 4px 0 -2px rgba(149,191,71,0.10)}
+
+.input-group{margin-bottom:24px;position:relative}
+.eye-toggle{position:absolute;right:4px;bottom:12px;font-size:16px;color:var(--muted);cursor:pointer;background:none;border:none;line-height:1}
+.eye-toggle:hover{color:var(--green-primary)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;font-family:'Manrope',sans-serif;font-weight:700;border-radius:var(--radius);transition:background 0.15s,transform 0.08s,border-color 0.15s;white-space:nowrap}
+.btn:active{transform:scale(0.985)}
+.btn-primary{background:var(--green-primary);color:var(--black);font-size:15px;height:48px;width:100%;margin-top:32px}
+.btn-primary:hover{background:var(--green-hover)}
+.btn-navy{background:var(--navy);color:#fff;font-size:13px;height:40px;padding:0 20px}
+.btn-navy:hover{background:#03203d}
+.btn-ghost{background:#fff;color:var(--black);border:1px solid var(--border);font-size:13px;height:40px;padding:0 20px}
+.btn-ghost:hover{border-color:var(--border-strong)}
+.btn-green-sm{background:var(--green-primary);color:var(--black);font-size:13px;height:36px;padding:0 16px}
+.btn-green-sm:hover{background:var(--green-hover)}
+.btn-red{background:var(--red);color:#fff;font-size:13px;height:40px;padding:0 20px}
+.btn-outline-navy{background:#fff;color:var(--navy);border:1px solid var(--navy);font-size:13px;height:40px;padding:0 20px}
+
+.login-signup{text-align:center;margin-top:20px;font-size:13px;color:var(--muted)}
+.login-signup a{color:var(--green-primary);font-weight:700;text-decoration:none;cursor:pointer}
+.login-signup a:hover{text-decoration:underline}
+
+/* ===== APP SHELL ===== */
+#screen-app{flex-direction:row}
+.sidebar{width:var(--sidebar-expanded);background:var(--navy);display:flex;flex-direction:column;height:100vh;position:fixed;left:0;top:0;z-index:30;border-right:1px solid rgba(255,255,255,0.08);transition:width 0.2s cubic-bezier(0.4,0,0.2,1);overflow:hidden}
+.sidebar.collapsed{width:var(--sidebar-collapsed)}
+
+.sidebar-logo{height:56px;display:flex;align-items:center;padding:0 16px;gap:8px;flex-shrink:0}
+.sidebar-logo .bolt{color:var(--green-primary);font-size:18px;flex-shrink:0}
+.sidebar-logo-text{font-family:'Manrope',sans-serif;font-size:11px;font-weight:700;color:#fff;letter-spacing:3px;text-transform:uppercase;white-space:nowrap;opacity:1;transition:opacity 0.15s}
+.sidebar.collapsed .sidebar-logo-text{opacity:0;width:0;overflow:hidden}
+.sidebar-accent{width:32px;height:2px;background:var(--green-primary);margin:0 16px 8px;flex-shrink:0}
+.sidebar.collapsed .sidebar-accent{display:none}
+
+.sidebar-nav{flex:1;padding:8px;display:flex;flex-direction:column;gap:2px;overflow:hidden}
+.nav-item{height:44px;display:flex;align-items:center;gap:12px;padding:0 12px;border-radius:var(--radius);cursor:pointer;position:relative;transition:background 0.12s;flex-shrink:0;text-decoration:none;border-left:3px solid transparent;white-space:nowrap}
+.nav-item:hover{background:rgba(255,255,255,0.06)}
+.nav-item.active{background:rgba(149,191,71,0.15);border-left-color:var(--green-primary)}
+.nav-item .nav-icon{font-size:18px;color:rgba(255,255,255,0.5);flex-shrink:0;width:20px;text-align:center;transition:color 0.12s}
+.nav-item .nav-label{font-size:13px;color:rgba(255,255,255,0.7);transition:color 0.12s,opacity 0.15s;white-space:nowrap}
+.nav-item.active .nav-icon,.nav-item.active .nav-label{color:#fff;font-weight:700}
+.nav-item:hover .nav-label{color:#fff}
+.sidebar.collapsed .nav-label{opacity:0;width:0;overflow:hidden}
+.nav-badge{width:6px;height:6px;background:var(--red);border-radius:50%;position:absolute;top:10px;right:10px}
+.sidebar.collapsed .nav-badge{right:8px;top:8px}
+
+/* Glass tooltip */
+.nav-tooltip{position:fixed;left:calc(var(--sidebar-collapsed) + 8px);background:rgba(255,255,255,0.90);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.5);border-radius:var(--radius);padding:6px 12px;font-size:13px;font-weight:700;color:var(--black);pointer-events:none;opacity:0;transition:opacity 0.1s,transform 0.1s;transform:translateX(-4px);z-index:100;white-space:nowrap}
+.nav-tooltip.visible{opacity:1;transform:translateX(0)}
+
+.sidebar-bottom{padding:8px;flex-shrink:0;border-top:1px solid rgba(255,255,255,0.08)}
+.sidebar-user{height:44px;display:flex;align-items:center;gap:12px;padding:0 8px;margin-bottom:4px;overflow:hidden}
+.user-avatar{width:32px;height:32px;background:rgba(255,255,255,0.1);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+.user-name{font-size:13px;color:rgba(255,255,255,0.7);white-space:nowrap;transition:opacity 0.15s}
+.sidebar.collapsed .user-name{opacity:0;width:0;overflow:hidden}
+.sidebar-toggle{height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.4);font-size:18px;border-radius:var(--radius);transition:color 0.12s,background 0.12s}
+.sidebar-toggle:hover{color:#fff;background:rgba(255,255,255,0.06)}
+
+.content-area{margin-left:var(--sidebar-expanded);flex:1;min-height:100vh;display:flex;flex-direction:column;transition:margin-left 0.2s cubic-bezier(0.4,0,0.2,1)}
+body.sidebar-collapsed .content-area{margin-left:var(--sidebar-collapsed)}
+
+/* ===== PAGE HEADER ===== */
+.page-header{height:64px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:10;flex-shrink:0}
+.page-header-left .page-title{font-family:'Fraunces',serif;font-size:26px;font-weight:700;color:var(--black);line-height:1.2}
+.page-header-left .page-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.page-header-right{display:flex;align-items:center;gap:12px}
+.icon-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;border-radius:var(--radius);transition:color 0.12s,background 0.12s;position:relative}
+.icon-btn:hover{color:var(--black);background:var(--surface)}
+.notif-dot{width:6px;height:6px;background:var(--red);border-radius:50%;position:absolute;top:6px;right:6px}
+
+/* ===== PAGE BODY ===== */
+.page-body{flex:1;padding:24px 32px;overflow-y:auto}
+
+/* ===== KPI BAND ===== */
+.kpi-band{background:#fff;border:1px solid var(--border);border-radius:var(--radius);display:flex;margin-bottom:20px}
+.kpi-col{flex:1;padding:20px 24px;border-right:1px solid var(--border)}
+.kpi-col:last-child{border-right:none}
+.kpi-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.kpi-value{font-family:'Fraunces',serif;font-size:40px;font-weight:700;color:var(--black);line-height:1;margin-top:4px}
+.kpi-trend{font-size:12px;margin-top:6px}
+.kpi-trend.up{color:var(--green-primary)}
+.kpi-trend.down{color:var(--red)}
+
+/* ===== DASHBOARD GRID ===== */
+.dash-grid{display:grid;grid-template-columns:1fr;gap:20px}
+.dash-row{display:grid;grid-template-columns:1.5fr 1fr;gap:20px}
+
+.panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius)}
+.panel-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 0}
+.panel-title{font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--black)}
+.panel-link{font-size:13px;color:var(--green-primary);text-decoration:none;cursor:pointer;font-weight:600}
+.panel-link:hover{text-decoration:underline}
+
+/* Period tabs */
+.period-tabs{display:flex;gap:16px}
+.period-tab{font-size:12px;color:var(--muted);cursor:pointer;height:28px;display:flex;align-items:center;border-bottom:2px solid transparent;transition:color 0.1s,border-color 0.1s}
+.period-tab.active{color:var(--black);font-weight:700;border-bottom-color:var(--green-primary)}
+.period-tab:hover{color:var(--black)}
+
+/* Chart area */
+.chart-area{padding:20px 24px 24px;position:relative}
+.chart-svg{width:100%;height:200px}
+.chart-empty{height:200px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--muted)}
+
+/* Table */
+.data-table{width:100%;border-collapse:collapse}
+.table-head{background:var(--navy)}
+.table-head th{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#fff;padding:0 16px;height:48px;text-align:left;white-space:nowrap}
+.table-head th:last-child{text-align:center}
+.table-body tr{border-bottom:1px solid var(--border);transition:background 0.08s;cursor:pointer}
+.table-body tr:nth-child(even){background:var(--surface)}
+.table-body tr:hover{background:var(--green-subtle)}
+.table-body td{font-size:14px;color:var(--black);padding:0 16px;height:48px;white-space:nowrap}
+.table-body td.muted{font-size:13px;color:var(--muted)}
+.table-body td.bold{font-weight:700}
+.table-body td.right{text-align:right}
+.table-actions{display:flex;align-items:center;gap:8px;opacity:0;transition:opacity 0.12s}
+tr:hover .table-actions{opacity:1}
+.table-actions button{background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;padding:4px;transition:color 0.12s;line-height:1}
+.table-actions button:hover{color:var(--green-primary)}
+.table-checkbox{width:16px;height:16px;border:1px solid var(--border);border-radius:3px;cursor:pointer;accent-color:var(--green-primary)}
+
+/* Status badge */
+.status-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:0 5px 5px 0;font-size:12px;font-weight:600;white-space:nowrap}
+.status-paid{border-left:3px solid #95BF47;background:rgba(149,191,71,0.07);color:#95BF47}
+.status-sent{border-left:3px solid #02172E;background:rgba(2,23,46,0.06);color:#02172E}
+.status-draft{border-left:3px solid #6B7280;background:rgba(107,114,128,0.07);color:#6B7280}
+.status-pending{border-left:3px solid #D97706;background:rgba(217,119,6,0.07);color:#D97706}
+.status-overdue{border-left:3px solid #CC3A3A;background:rgba(204,58,58,0.07);color:#CC3A3A}
+.status-cancelled{border-left:3px solid #E4E4E0;background:rgba(228,228,224,0.5);color:#6B7280}
+
+/* Pagination */
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--border)}
+.page-info{font-size:13px;color:var(--muted)}
+.page-nums{display:flex;align-items:center;gap:4px}
+.page-num{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted);cursor:pointer;border-radius:var(--radius);transition:background 0.1s}
+.page-num:hover{background:var(--green-subtle);color:var(--black)}
+.page-num.active{color:var(--green-primary);font-weight:700}
+.page-arrow{background:none;border:none;font-size:16px;color:var(--muted);cursor:pointer;padding:4px;transition:color 0.1s;line-height:1}
+.page-arrow:hover{color:var(--green-primary)}
+
+/* Quick actions */
+.action-rows{}
+.action-row{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.12s}
+.action-row:hover{background:var(--green-subtle)}
+.action-row:last-child{border-bottom:none}
+.action-row-left{display:flex;align-items:center;gap:12px}
+.action-icon-tile{width:36px;height:36px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.action-label{font-size:14px;color:var(--black)}
+.action-chevron{font-size:16px;color:var(--muted)}
+
+/* Status donut section */
+.status-section{padding:20px;border-top:1px solid var(--border)}
+.status-bar-wrap{margin-top:16px}
+.status-bar{height:8px;border-radius:5px;overflow:hidden;display:flex}
+.status-bar-seg{height:100%;transition:width 0.6s cubic-bezier(0.4,0,0.2,1)}
+.status-legend{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.legend-row{display:flex;align-items:center;justify-content:space-between}
+.legend-left{display:flex;align-items:center;gap:8px}
+.legend-dot{width:8px;height:8px;border-radius:2px}
+.legend-label{font-size:12px;color:var(--muted)}
+.legend-val{font-size:12px;font-weight:700;color:var(--black)}
+
+/* ===== CONTROL BAR ===== */
+.control-bar{height:52px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;padding:0 20px;margin-bottom:16px}
+.filter-tabs{display:flex;align-items:center;gap:0;height:52px}
+.filter-tab{font-size:13px;color:var(--muted);cursor:pointer;height:52px;display:flex;align-items:center;padding:0 14px;border-bottom:2px solid transparent;transition:color 0.1s,border-color 0.1s;white-space:nowrap}
+.filter-tab.active{font-weight:700;color:var(--black);border-bottom-color:var(--green-primary)}
+.filter-tab:hover{color:var(--black)}
+
+.search-box{display:flex;align-items:center;gap:0;width:260px;height:36px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color 0.15s,box-shadow 0.15s;background:#fff}
+.search-box:focus-within{border-color:var(--green-primary);box-shadow:0 0 0 3px rgba(149,191,71,0.12)}
+.search-icon{font-size:16px;color:var(--muted);padding:0 12px;flex-shrink:0}
+.search-input{flex:1;border:none;outline:none;font-family:'Manrope',sans-serif;font-size:13px;color:var(--black);background:transparent;padding-right:8px}
+.search-input::placeholder{color:var(--muted)}
+
+/* ===== TABLE CONTAINER ===== */
+.table-container{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+
+/* ===== EMPTY STATE ===== */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 40px;text-align:center;background:#fff}
+.empty-icon{font-size:48px;color:var(--muted);margin-bottom:16px;line-height:1}
+.empty-title{font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--black);margin-bottom:8px}
+.empty-desc{font-size:14px;color:var(--muted);max-width:360px;line-height:1.6;margin-bottom:24px}
+
+/* ===== CREATE INVOICE ===== */
+.create-header{height:56px;background:#fff;border-bottom:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;position:sticky;top:0;z-index:10}
+.create-header h2{font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--black)}
+.create-header p{font-size:12px;color:var(--muted);margin-top:2px}
+.create-layout{display:grid;grid-template-columns:1fr 360px;gap:24px;max-width:1280px;margin:24px auto;padding:0 32px}
+.form-blocks{display:flex;flex-direction:column;gap:16px;min-width:0}
+.form-block{background:#fff;border:1px solid var(--border);border-radius:var(--radius)}
+.form-block-pad{padding:24px}
+.block-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.field-group{display:flex;flex-direction:column}
+.field-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.field-input{height:40px;border:1px solid var(--border);border-radius:var(--radius);font-family:'Manrope',sans-serif;font-size:14px;color:var(--black);padding:0 12px;outline:none;transition:border-color 0.15s,box-shadow 0.15s;background:#fff}
+.field-input:focus{border-color:var(--green-primary);box-shadow:0 0 0 3px rgba(149,191,71,0.12)}
+.field-input.readonly{background:var(--surface);color:var(--muted)}
+.field-select{height:40px;border:1px solid var(--border);border-radius:var(--radius);font-family:'Manrope',sans-serif;font-size:14px;color:var(--black);padding:0 12px;outline:none;background:#fff;cursor:pointer;transition:border-color 0.15s}
+.field-select:focus{border-color:var(--green-primary);box-shadow:0 0 0 3px rgba(149,191,71,0.12)}
+
+/* Billed block */
+.billed-grid{display:grid;grid-template-columns:1fr 1fr}
+.billed-col{padding:20px}
+.billed-col+.billed-col{border-left:1px solid var(--border)}
+.billed-selector{height:40px;border:1px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;gap:10px;padding:0 12px;cursor:pointer;transition:border-color 0.15s}
+.billed-selector:hover{border-color:var(--border-strong)}
+.billed-mini-avatar{width:24px;height:24px;background:var(--navy);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.billed-name{font-size:14px;color:var(--black);flex:1}
+.billed-chevron{font-size:14px;color:var(--muted)}
+.billed-details{margin-top:12px}
+.billed-biz-name{font-size:14px;font-weight:700;color:var(--black)}
+.billed-biz-sub{font-size:13px;color:var(--muted)}
+.text-link{font-size:13px;color:var(--green-primary);cursor:pointer;text-decoration:none;font-weight:500;margin-top:4px;display:inline-block}
+.text-link:hover{text-decoration:underline}
+.or-divider{display:flex;align-items:center;gap:8px;margin:12px 0;font-size:12px;color:var(--muted)}
+.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Line items table */
+.line-table{width:100%;border-collapse:collapse}
+.line-table th{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#fff;padding:0 12px;height:48px;text-align:left;background:var(--navy)}
+.line-table td{padding:0 12px;height:48px;border-bottom:1px solid var(--border)}
+.line-table tr:hover td{background:var(--green-subtle)}
+.line-input{border:none;outline:none;font-family:'Manrope',sans-serif;font-size:14px;color:var(--black);background:transparent;width:100%}
+.add-line{display:block;font-size:13px;color:var(--green-primary);cursor:pointer;padding:12px 16px;font-weight:600}
+.add-line:hover{text-decoration:underline}
+
+/* Totals */
+.totals-wrap{padding:20px;margin-left:auto;max-width:360px}
+.totals-title{font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--black);margin-bottom:12px}
+.totals-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.totals-label{font-size:14px;color:var(--muted)}
+.totals-val{font-size:14px;color:var(--black);font-weight:500}
+.totals-divider{height:1px;background:var(--border);margin:12px 0}
+.totals-total-label{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--black)}
+.totals-total-val{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--black)}
+.totals-words{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:12px;display:block}
+.totals-words-val{font-size:13px;color:var(--muted);font-style:italic;margin-top:4px}
+
+/* Signature zone */
+.sig-zone{border:1px dashed var(--border);border-radius:var(--radius);height:96px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:background 0.15s,border-color 0.15s}
+.sig-zone:hover{background:var(--green-subtle);border-color:var(--green-primary)}
+.sig-zone span{font-size:13px;color:var(--green-primary);font-weight:500}
+
+/* Terms */
+.terms-header{display:flex;align-items:center;justify-content:space-between;padding:20px;border-bottom:1px solid var(--border)}
+.terms-title{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--black)}
+.term-row{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border)}
+.term-num{font-size:13px;font-weight:700;color:var(--muted);margin-right:12px;flex-shrink:0}
+.term-text{font-size:13px;color:var(--black);flex:1}
+.term-controls{display:flex;gap:8px}
+.term-btn{background:none;border:none;font-size:16px;color:var(--muted);cursor:pointer;transition:color 0.12s;padding:2px;line-height:1}
+.term-btn:hover{color:var(--green-primary)}
+.add-term{font-size:13px;color:var(--green-primary);cursor:pointer;padding:12px 20px;display:block;font-weight:600}
+
+/* Preview panel */
+.preview-panel{background:var(--navy);border-radius:var(--radius);padding:20px;position:sticky;top:88px;align-self:start}
+.preview-label{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:12px}
+.preview-doc{background:#fff;border-radius:var(--radius);padding:24px;box-shadow:0 4px 24px rgba(0,0,0,0.2);transform:scale(0.9);transform-origin:top center;min-height:400px}
+.preview-doc-logo{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--black);margin-bottom:16px}
+.preview-doc-num{font-size:11px;color:var(--muted);font-family:'Manrope',sans-serif}
+.preview-doc-div{height:1px;background:var(--border);margin:16px 0}
+.preview-doc-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-family:'Manrope',sans-serif;margin-bottom:6px}
+
+/* Bottom bar */
+.bottom-bar{position:sticky;bottom:0;z-index:20;background:#fff;border-top:1px solid var(--border);height:64px;padding:0 32px;display:flex;align-items:center;justify-content:space-between}
+
+/* ===== CLIENTS GRID ===== */
+.clients-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
+.client-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:20px;cursor:pointer;transition:border-color 0.15s}
+.client-card:hover{border-color:var(--green-primary)}
+.client-card-avatar{width:40px;height:40px;background:var(--navy);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff}
+.client-card-name{font-size:14px;font-weight:700;color:var(--black);margin-top:12px}
+.client-card-type{display:inline-flex;font-size:11px;color:var(--muted);background:var(--surface-raised);border-radius:3px;padding:2px 6px;margin-top:4px}
+.client-card-meta{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.5}
+.client-card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.client-card-count{font-size:12px;color:var(--muted)}
+
+/* ===== MODAL ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(2,23,46,0.5);backdrop-filter:blur(4px);z-index:50;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;max-height:88vh}
+.modal-sm{width:480px}
+.modal-md{width:640px}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-header-left{display:flex;align-items:center;gap:12px}
+.modal-icon-tile{width:40px;height:40px;background:rgba(149,191,71,0.12);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.modal-title{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--black)}
+.modal-subtitle{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.modal-close{background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;padding:4px;transition:color 0.12s;line-height:1}
+.modal-close:hover{color:var(--black)}
+.modal-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.modal-tab{flex:1;height:48px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:color 0.1s,border-color 0.1s}
+.modal-tab.active{font-weight:700;color:var(--black);border-bottom-color:var(--green-primary)}
+.modal-tab:hover{color:var(--black)}
+.modal-body{padding:24px;overflow-y:auto;flex:1}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:12px;flex-shrink:0}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+.modal-field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.modal-field{margin-bottom:16px}
+.logo-upload-zone{width:100px;height:100px;border:1px dashed var(--border);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;margin-bottom:16px;transition:border-color 0.15s,background 0.15s}
+.logo-upload-zone:hover{border-color:var(--green-primary);background:var(--green-subtle)}
+.logo-upload-zone span{font-size:12px;color:var(--muted)}
+.radio-group{display:flex;gap:16px;margin-bottom:16px}
+.radio-label{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--black);cursor:pointer}
+.radio-label input{accent-color:var(--green-primary)}
+.checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--black);cursor:pointer;margin-bottom:12px}
+.checkbox-row input{accent-color:var(--green-primary);width:16px;height:16px}
+.cancel-text{background:none;border:none;font-size:14px;color:var(--muted);cursor:pointer;height:40px;padding:0 8px;font-family:'Manrope',sans-serif;font-weight:500}
+.cancel-text:hover{color:var(--black)}
+
+/* ===== SETTINGS ===== */
+.settings-layout{display:grid;grid-template-columns:200px 1fr;gap:24px;max-width:1280px;margin:0 auto;padding:24px 32px}
+.settings-nav{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:8px;position:sticky;top:88px;align-self:start}
+.settings-nav-item{height:44px;display:flex;align-items:center;gap:10px;padding:0 16px;border-radius:var(--radius);cursor:pointer;transition:background 0.12s;border-left:3px solid transparent}
+.settings-nav-item.active{background:var(--green-subtle);border-left-color:var(--green-primary)}
+.settings-nav-item:hover{background:var(--green-subtle)}
+.settings-nav-item .nav-icon{font-size:18px;color:var(--muted)}
+.settings-nav-item .nav-lbl{font-size:13px;color:var(--muted)}
+.settings-nav-item.active .nav-lbl,.settings-nav-item.active .nav-icon{color:var(--black);font-weight:700}
+.settings-sections{display:flex;flex-direction:column;gap:16px}
+.settings-section{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.section-header{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.section-icon-tile{width:32px;height:32px;background:rgba(149,191,71,0.10);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.section-title{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--black)}
+.settings-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.settings-field{display:flex;flex-direction:column;gap:4px}
+.settings-field-full{grid-column:1/-1}
+.settings-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.settings-val{font-size:14px;color:var(--black);padding:8px 0;border-bottom:1px solid var(--border)}
+.upload-zone{border:1px dashed var(--border);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:border-color 0.15s,background 0.15s;padding:24px}
+.upload-zone:hover{border-color:var(--green-primary);background:var(--green-subtle)}
+.upload-zone span{font-size:13px;color:var(--muted)}
+
+/* ===== ITEM MASTER ===== */
+.item-table-container{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-top:0}
+
+/* ===== TOOLTIPS / GLASS POPOVERS ===== */
+#sidebar-tooltip{position:fixed;background:rgba(255,255,255,0.90);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.5);border-radius:var(--radius);padding:6px 12px;font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;color:var(--black);pointer-events:none;z-index:200;opacity:0;transform:translateX(-4px);transition:opacity 0.1s ease-out,transform 0.1s ease-out;white-space:nowrap}
+#sidebar-tooltip.show{opacity:1;transform:translateX(0)}
+
+/* ===== UTILITY ===== */
+.flex{display:flex}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-2{gap:8px}.gap-3{gap:12px}.mt-1{margin-top:4px}.mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}.w-full{width:100%}
+
+/* Chart path animation */
+@keyframes drawLine{from{stroke-dashoffset:1000}to{stroke-dashoffset:0}}
+.chart-line-animated{stroke-dasharray:1000;animation:drawLine 0.8s ease-out forwards}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skeleton{background:linear-gradient(90deg,#F4F4F1 25%,#E8E8E4 50%,#F4F4F1 75%);background-size:200% 100%;animation:shimmer 1.4s infinite ease-in-out;border-radius:var(--radius-sm)}
+</style>
+</head>
+<body>
+
+<!-- ============ SIDEBAR TOOLTIP ============ -->
+<div id="sidebar-tooltip"></div>
+
+<!-- ============ SCREEN: LOGIN ============ -->
+<div class="screen active" id="screen-login">
+  <div class="login-wrap">
+    <div class="login-left">
+      <div class="login-logo">
+        <span class="bolt">⚡</span>
+        <span>InvoiceFlow</span>
+      </div>
+      <div class="login-accent-line"></div>
+      <div class="login-hero">
+        <h1>Craft your <em>vision</em> into reality.</h1>
+        <p>The premium workspace for digital architects who refuse to settle for the ordinary.</p>
+      </div>
+      <div style="flex:1"></div>
+      <div class="login-tiles">
+        <div class="tile-1"><span class="tile-icon">🧭</span></div>
+        <div class="tile-stack">
+          <div class="tile-2"><span class="tile-icon" style="opacity:0.3">⊞</span></div>
+          <div class="tile-3"><span class="tile-icon" style="color:#02172E">💡</span></div>
+        </div>
+      </div>
+      <div class="login-copy">© 2026 AltiusNxt. All rights reserved.</div>
+    </div>
+    <div class="login-right">
+      <div class="login-right-header">
+        <a class="support-link">Support</a>
+      </div>
+      <div class="login-form-wrap">
+        <div class="login-form">
+          <span class="login-form-bolt">⚡</span>
+          <h2>Welcome back.</h2>
+          <p class="sub">Sign in to your account</p>
+          <label class="micro-label">Email Address</label>
+          <div class="input-group">
+            <input class="underline-input" type="email" placeholder="you@company.com">
+          </div>
+          <label class="micro-label">Password</label>
+          <div class="input-group">
+            <input class="underline-input" type="password" placeholder="••••••••" id="pw-input">
+            <button class="eye-toggle" onclick="togglePw()">👁</button>
+          </div>
+          <button class="btn btn-primary" onclick="goToApp()">Sign In →</button>
+          <div class="login-signup">Don't have an account? <a>Create one free</a></div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:16px">
+        <span style="font-size:12px;color:var(--muted)">Privacy Policy · Terms of Service · Help Center</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCREEN: APP ============ -->
+<div class="screen" id="screen-app">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="bolt">⚡</span>
+      <span class="sidebar-logo-text">InvoiceFlow</span>
+    </div>
+    <div class="sidebar-accent"></div>
+    <div class="sidebar-nav">
+      <div class="nav-item active" data-screen="dashboard" data-label="Dashboard" onclick="switchPage(this,'dashboard')">
+        <span class="nav-icon">⊞</span>
+        <span class="nav-label">Dashboard</span>
+      </div>
+      <div class="nav-item" data-screen="invoices" data-label="Invoices" onclick="switchPage(this,'invoices')">
+        <span class="nav-icon">≡</span>
+        <span class="nav-label">Invoices</span>
+        <span class="nav-badge"></span>
+      </div>
+      <div class="nav-item" data-screen="clients" data-label="Clients" onclick="switchPage(this,'clients')">
+        <span class="nav-icon">◎</span>
+        <span class="nav-label">Clients</span>
+      </div>
+      <div class="nav-item" data-screen="items" data-label="Item Master" onclick="switchPage(this,'items')">
+        <span class="nav-icon">▣</span>
+        <span class="nav-label">Item Master</span>
+      </div>
+      <div class="nav-item" data-screen="settings" data-label="Settings" onclick="switchPage(this,'settings')">
+        <span class="nav-icon">⚙</span>
+        <span class="nav-label">Settings</span>
+      </div>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="user-avatar">P</div>
+        <span class="user-name">Praba</span>
+      </div>
+      <div class="sidebar-toggle" onclick="toggleSidebar()">
+        <span id="toggle-icon">◀</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- CONTENT AREA -->
+  <div class="content-area" id="content-area">
+
+    <!-- PAGE: DASHBOARD -->
+    <div id="page-dashboard" class="page-content" style="display:flex;flex-direction:column;min-height:100vh">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub">Welcome back! Here's your overview.</div>
+        </div>
+        <div class="page-header-right">
+          <button class="icon-btn">🔍</button>
+          <button class="icon-btn" style="position:relative">🔔<span class="notif-dot"></span></button>
+          <button class="btn btn-green-sm" onclick="switchPage(document.querySelector('[data-screen=invoices]'),'invoices');setTimeout(()=>showCreateInvoice(),50)">+ New Invoice</button>
+        </div>
+      </div>
+      <div class="page-body">
+        <!-- KPI Band -->
+        <div class="kpi-band">
+          <div class="kpi-col">
+            <div class="kpi-label">Total Invoices</div>
+            <div class="kpi-value">0</div>
+            <div class="kpi-trend up">↑ 12% from last month</div>
+          </div>
+          <div class="kpi-col">
+            <div class="kpi-label">Total Revenue</div>
+            <div class="kpi-value">₹0.00</div>
+            <div class="kpi-trend up">↑ 8% from last month</div>
+          </div>
+          <div class="kpi-col">
+            <div class="kpi-label">Pending Amount</div>
+            <div class="kpi-value">₹0.00</div>
+            <div class="kpi-trend down">↓ 5% from last month</div>
+          </div>
+          <div class="kpi-col">
+            <div class="kpi-label">Overdue Amount</div>
+            <div class="kpi-value">₹0.00</div>
+            <div class="kpi-trend down">Needs immediate attention</div>
+          </div>
+        </div>
+        <!-- Two col -->
+        <div class="dash-row">
+          <!-- Left col -->
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <!-- Revenue Chart -->
+            <div class="panel">
+              <div class="panel-header">
+                <span class="panel-title">Revenue Overview</span>
+                <div class="period-tabs">
+                  <span class="period-tab active">3M</span>
+                  <span class="period-tab">6M</span>
+                  <span class="period-tab">1Y</span>
+                </div>
+              </div>
+              <div class="chart-area">
+                <svg class="chart-svg" viewBox="0 0 600 200" preserveAspectRatio="none">
+                  <!-- Grid lines -->
+                  <line x1="0" y1="40" x2="600" y2="40" stroke="#F4F4F1" stroke-width="1"/>
+                  <line x1="0" y1="80" x2="600" y2="80" stroke="#F4F4F1" stroke-width="1"/>
+                  <line x1="0" y1="120" x2="600" y2="120" stroke="#F4F4F1" stroke-width="1"/>
+                  <line x1="0" y1="160" x2="600" y2="160" stroke="#F4F4F1" stroke-width="1"/>
+                  <!-- Y axis labels -->
+                  <text x="0" y="36" font-size="11" fill="#6B7280" font-family="Manrope">₹60k</text>
+                  <text x="0" y="76" font-size="11" fill="#6B7280" font-family="Manrope">₹40k</text>
+                  <text x="0" y="116" font-size="11" fill="#6B7280" font-family="Manrope">₹20k</text>
+                  <text x="0" y="176" font-size="11" fill="#6B7280" font-family="Manrope">₹0k</text>
+                  <!-- Gradient fill -->
+                  <defs>
+                    <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#95BF47" stop-opacity="0.12"/>
+                      <stop offset="100%" stop-color="#95BF47" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <!-- Area fill -->
+                  <path d="M50,160 C100,140 150,100 200,90 C250,80 300,110 350,70 C400,30 450,60 530,50 L530,170 L50,170 Z" fill="url(#chartFill)"/>
+                  <!-- Line -->
+                  <path class="chart-line-animated" d="M50,160 C100,140 150,100 200,90 C250,80 300,110 350,70 C400,30 450,60 530,50" fill="none" stroke="#95BF47" stroke-width="2" stroke-linecap="round"/>
+                  <!-- Data points -->
+                  <circle cx="50" cy="160" r="5" fill="#95BF47" stroke="#fff" stroke-width="2"/>
+                  <circle cx="150" cy="100" r="5" fill="#95BF47" stroke="#fff" stroke-width="2"/>
+                  <circle cx="250" cy="80" r="5" fill="#95BF47" stroke="#fff" stroke-width="2"/>
+                  <circle cx="350" cy="70" r="5" fill="#95BF47" stroke="#fff" stroke-width="2"/>
+                  <circle cx="450" cy="60" r="5" fill="#95BF47" stroke="#fff" stroke-width="2"/>
+                  <circle cx="530" cy="50" r="5" fill="#95BF47" stroke="#fff" stroke-width="2"/>
+                  <!-- X axis labels -->
+                  <text x="40" y="195" font-size="11" fill="#6B7280" font-family="Manrope" text-anchor="middle">Nov</text>
+                  <text x="150" y="195" font-size="11" fill="#6B7280" font-family="Manrope" text-anchor="middle">Dec</text>
+                  <text x="250" y="195" font-size="11" fill="#6B7280" font-family="Manrope" text-anchor="middle">Jan</text>
+                  <text x="350" y="195" font-size="11" fill="#6B7280" font-family="Manrope" text-anchor="middle">Feb</text>
+                  <text x="450" y="195" font-size="11" fill="#6B7280" font-family="Manrope" text-anchor="middle">Mar</text>
+                  <text x="530" y="195" font-size="11" fill="#6B7280" font-family="Manrope" text-anchor="middle">Apr</text>
+                </svg>
+              </div>
+            </div>
+            <!-- Recent Invoices -->
+            <div class="panel">
+              <div class="panel-header" style="padding-bottom:0">
+                <span class="panel-title">Recent Invoices</span>
+                <a class="panel-link" onclick="switchPage(document.querySelector('[data-screen=invoices]'),'invoices')">View all →</a>
+              </div>
+              <div class="table-container" style="border:none;border-radius:0;margin-top:16px">
+                <table class="data-table">
+                  <thead class="table-head">
+                    <tr>
+                      <th>Invoice No</th><th>Client</th><th>Date</th><th>Due Date</th><th>Amount</th><th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody class="table-body">
+                    <tr>
+                      <td class="bold">INV-0001</td>
+                      <td>Acme Corp</td>
+                      <td class="muted">12 Apr 2026</td>
+                      <td class="muted">12 May 2026</td>
+                      <td class="bold right">₹45,000</td>
+                      <td><span class="status-badge status-paid">Paid</span></td>
+                    </tr>
+                    <tr>
+                      <td class="bold">INV-0002</td>
+                      <td>TechNova Ltd</td>
+                      <td class="muted">08 Apr 2026</td>
+                      <td class="muted">08 May 2026</td>
+                      <td class="bold right">₹1,20,000</td>
+                      <td><span class="status-badge status-sent">Sent</span></td>
+                    </tr>
+                    <tr>
+                      <td class="bold">INV-0003</td>
+                      <td>Skyline Partners</td>
+                      <td class="muted">01 Apr 2026</td>
+                      <td class="muted">01 May 2026</td>
+                      <td class="bold right">₹78,500</td>
+                      <td><span class="status-badge status-overdue">Overdue</span></td>
+                    </tr>
+                    <tr>
+                      <td class="bold">INV-0004</td>
+                      <td>GlobalSync</td>
+                      <td class="muted">25 Mar 2026</td>
+                      <td class="muted">25 Apr 2026</td>
+                      <td class="bold right">₹32,000</td>
+                      <td><span class="status-badge status-pending">Pending</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <!-- Right col -->
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="panel">
+              <!-- Quick Actions -->
+              <div style="padding:20px 0">
+                <div class="panel-title" style="padding:0 20px;margin-bottom:8px">Quick Actions</div>
+                <div class="action-rows">
+                  <div class="action-row" onclick="showCreateInvoice()">
+                    <div class="action-row-left">
+                      <div class="action-icon-tile" style="background:var(--green-subtle)">⚡</div>
+                      <span class="action-label">Create New Invoice</span>
+                    </div>
+                    <span class="action-chevron">›</span>
+                  </div>
+                  <div class="action-row" onclick="switchPage(document.querySelector('[data-screen=clients]'),'clients')">
+                    <div class="action-row-left">
+                      <div class="action-icon-tile" style="background:rgba(2,23,46,0.08)">📄</div>
+                      <span class="action-label">Add New Client</span>
+                    </div>
+                    <span class="action-chevron">›</span>
+                  </div>
+                  <div class="action-row" onclick="switchPage(document.querySelector('[data-screen=items]'),'items')">
+                    <div class="action-row-left">
+                      <div class="action-icon-tile" style="background:rgba(204,58,58,0.08)">＋</div>
+                      <span class="action-label">Add Item to Master</span>
+                    </div>
+                    <span class="action-chevron">›</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Status Section -->
+              <div class="status-section">
+                <div class="panel-title">Invoice Status</div>
+                <div class="status-bar-wrap">
+                  <div class="status-bar">
+                    <div class="status-bar-seg" style="width:40%;background:#95BF47"></div>
+                    <div class="status-bar-seg" style="width:25%;background:#02172E"></div>
+                    <div class="status-bar-seg" style="width:20%;background:#D97706"></div>
+                    <div class="status-bar-seg" style="width:15%;background:#CC3A3A"></div>
+                  </div>
+                </div>
+                <div class="status-legend">
+                  <div class="legend-row">
+                    <div class="legend-left"><div class="legend-dot" style="background:#95BF47"></div><span class="legend-label">Paid</span></div>
+                    <span class="legend-val">1</span>
+                  </div>
+                  <div class="legend-row">
+                    <div class="legend-left"><div class="legend-dot" style="background:#02172E"></div><span class="legend-label">Sent</span></div>
+                    <span class="legend-val">1</span>
+                  </div>
+                  <div class="legend-row">
+                    <div class="legend-left"><div class="legend-dot" style="background:#D97706"></div><span class="legend-label">Pending</span></div>
+                    <span class="legend-val">1</span>
+                  </div>
+                  <div class="legend-row">
+                    <div class="legend-left"><div class="legend-dot" style="background:#CC3A3A"></div><span class="legend-label">Overdue</span></div>
+                    <span class="legend-val">1</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: INVOICES LIST -->
+    <div id="page-invoices" class="page-content" style="display:none;flex-direction:column;min-height:100vh">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-title">Invoices</div>
+          <div class="page-sub">Manage and track your billings</div>
+        </div>
+        <div class="page-header-right">
+          <button class="icon-btn" style="position:relative">🔔<span class="notif-dot"></span></button>
+          <button class="btn btn-green-sm" onclick="showCreateInvoice()">+ Create Invoice</button>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="control-bar">
+          <div class="filter-tabs">
+            <span class="filter-tab active">All</span>
+            <span class="filter-tab">Draft</span>
+            <span class="filter-tab">Sent</span>
+            <span class="filter-tab">Paid</span>
+            <span class="filter-tab">Overdue</span>
+            <span class="filter-tab">Cancelled</span>
+          </div>
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input class="search-input" placeholder="Search invoices or clients...">
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead class="table-head">
+              <tr>
+                <th style="width:40px"><input type="checkbox" class="table-checkbox"></th>
+                <th style="width:120px">Invoice No</th>
+                <th style="width:200px">Client Name</th>
+                <th style="width:120px">Issue Date</th>
+                <th style="width:120px">Due Date</th>
+                <th style="width:140px">Amount</th>
+                <th style="width:130px">Status</th>
+                <th style="width:80px;text-align:center">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="table-body">
+              <tr>
+                <td><input type="checkbox" class="table-checkbox"></td>
+                <td class="bold">INV-0001</td>
+                <td>Acme Corp</td>
+                <td class="muted">12 Apr 2026</td>
+                <td class="muted">12 May 2026</td>
+                <td class="bold right">₹45,000.00</td>
+                <td><span class="status-badge status-paid">Paid</span></td>
+                <td><div class="table-actions" style="justify-content:center">👁 ✎ ⬇</div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" class="table-checkbox"></td>
+                <td class="bold">INV-0002</td>
+                <td>TechNova Ltd</td>
+                <td class="muted">08 Apr 2026</td>
+                <td class="muted">08 May 2026</td>
+                <td class="bold right">₹1,20,000.00</td>
+                <td><span class="status-badge status-sent">Sent</span></td>
+                <td><div class="table-actions" style="justify-content:center">👁 ✎ ⬇</div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" class="table-checkbox"></td>
+                <td class="bold">INV-0003</td>
+                <td>Skyline Partners</td>
+                <td class="muted">01 Apr 2026</td>
+                <td class="muted">01 May 2026</td>
+                <td class="bold right">₹78,500.00</td>
+                <td><span class="status-badge status-overdue">Overdue</span></td>
+                <td><div class="table-actions" style="justify-content:center">👁 ✎ ⬇</div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" class="table-checkbox"></td>
+                <td class="bold">INV-0004</td>
+                <td>GlobalSync</td>
+                <td class="muted">25 Mar 2026</td>
+                <td class="muted">25 Apr 2026</td>
+                <td class="bold right">₹32,000.00</td>
+                <td><span class="status-badge status-pending">Pending</span></td>
+                <td><div class="table-actions" style="justify-content:center">👁 ✎ ⬇</div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" class="table-checkbox"></td>
+                <td class="bold">INV-0005</td>
+                <td>BlueWave Inc</td>
+                <td class="muted">18 Mar 2026</td>
+                <td class="muted">18 Apr 2026</td>
+                <td class="bold right">₹15,000.00</td>
+                <td><span class="status-badge status-draft">Draft</span></td>
+                <td><div class="table-actions" style="justify-content:center">👁 ✎ ⬇</div></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="pagination">
+            <span class="page-info">Showing 1–5 of 5 invoices</span>
+            <div class="page-nums">
+              <button class="page-arrow">‹</button>
+              <span class="page-num active">1</span>
+              <button class="page-arrow">›</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: CREATE INVOICE -->
+    <div id="page-create-invoice" class="page-content" style="display:none;flex-direction:column;min-height:100vh">
+      <div class="create-header">
+        <h2>Create New Invoice</h2>
+        <p>① Add Invoice Details</p>
+      </div>
+      <div class="create-layout">
+        <!-- LEFT FORM -->
+        <div class="form-blocks">
+          <!-- Block 1: Identity -->
+          <div class="form-block">
+            <div class="form-block-pad">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                <div>
+                  <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--black);cursor:text;border-bottom:1px dashed transparent;padding-bottom:2px;transition:border-color 0.15s" onmouseover="this.style.borderColor='#95BF47'" onmouseout="this.style.borderColor='transparent'">Export Invoice</div>
+                  <a class="text-link mt-1">+ Add Subtitle</a>
+                </div>
+                <div style="width:140px;height:80px;border:1px dashed var(--border);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer">
+                  <span style="font-size:20px;color:var(--muted)">🖼</span>
+                  <span style="font-size:12px;color:var(--muted)">Add Business Logo</span>
+                </div>
+              </div>
+              <div class="block-row mt-4">
+                <div class="field-group">
+                  <label class="field-label">Invoice No *</label>
+                  <input class="field-input readonly" value="INV-0006" readonly>
+                </div>
+                <div class="field-group">
+                  <label class="field-label">Invoice Date *</label>
+                  <input class="field-input" type="date" value="2026-04-29">
+                </div>
+              </div>
+              <div class="block-row mt-2">
+                <div class="field-group">
+                  <label class="field-label">Due Date</label>
+                  <input class="field-input" type="date">
+                </div>
+                <div class="field-group">
+                  <label class="field-label">PO No & Date</label>
+                  <input class="field-input" placeholder="Purchase order ref">
+                </div>
+              </div>
+              <div class="field-group mt-2">
+                <label class="field-label">Export Type</label>
+                <div style="background:var(--green-subtle);border:1px solid rgba(149,191,71,0.3);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--black)">Data Entry and conversion, Software processing, RBI Code: 907</div>
+              </div>
+            </div>
+          </div>
+          <!-- Block 2: Billed By/To -->
+          <div class="form-block">
+            <div class="billed-grid">
+              <div class="billed-col">
+                <div class="field-label">Billed By</div>
+                <div class="billed-selector mt-2">
+                  <div class="billed-mini-avatar">P</div>
+                  <span class="billed-name">Praba</span>
+                  <span class="billed-chevron">⌄</span>
+                </div>
+                <div class="billed-details mt-3">
+                  <div class="field-label">Business Details</div>
+                  <div class="billed-biz-name mt-1">Praba</div>
+                  <div class="billed-biz-sub">India, Other Territory</div>
+                  <a class="text-link">✎ Edit</a>
+                </div>
+              </div>
+              <div class="billed-col">
+                <div class="field-label">Billed To</div>
+                <select class="field-select mt-2" style="width:100%">
+                  <option value="">Select a Client</option>
+                  <option>Acme Corp</option>
+                  <option>TechNova Ltd</option>
+                  <option>Skyline Partners</option>
+                </select>
+                <div style="font-size:13px;color:var(--muted);margin-top:8px">Select Client/Business from the list</div>
+                <div class="or-divider">OR</div>
+                <button class="btn btn-navy" style="width:100%">+ Add New Client</button>
+              </div>
+            </div>
+          </div>
+          <!-- Block 3: Currency -->
+          <div class="form-block">
+            <div class="form-block-pad" style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+              <div>
+                <div class="field-label">Currency *</div>
+                <select class="field-select mt-1" style="width:280px">
+                  <option>European Union (EUR, €)</option>
+                  <option>United States (USD, $)</option>
+                  <option>India (INR, ₹)</option>
+                </select>
+              </div>
+              <a class="text-link">123 Number and Currency Format</a>
+            </div>
+          </div>
+          <!-- Block 4: Line Items -->
+          <div class="form-block" style="overflow:hidden">
+            <table class="line-table" style="width:100%">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th style="width:80px">HSN/SAC</th>
+                  <th style="width:80px">Quantity</th>
+                  <th style="width:120px">Rate</th>
+                  <th style="width:100px">Amount</th>
+                  <th style="width:100px">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <input class="line-input" placeholder="Item Name / SKU Id">
+                  </td>
+                  <td><input class="line-input" placeholder="#" style="text-align:center"></td>
+                  <td><input class="line-input" value="1" style="text-align:center;width:60px"></td>
+                  <td><input class="line-input" placeholder="€0.00" style="text-align:right"></td>
+                  <td style="font-size:14px;font-weight:700;text-align:right;color:var(--black)">€0.00</td>
+                  <td style="font-size:14px;font-weight:700;text-align:right;color:var(--black)">€0.00</td>
+                </tr>
+              </tbody>
+            </table>
+            <a class="add-line">＋ Add New Line</a>
+          </div>
+          <!-- Block 5: Totals -->
+          <div class="form-block">
+            <div class="totals-wrap">
+              <div class="totals-title">Total in PDF</div>
+              <div class="totals-row">
+                <span class="totals-label">Amount</span>
+                <span class="totals-val">€0.00</span>
+              </div>
+              <div class="totals-row">
+                <span class="totals-label">Bank Charges</span>
+                <input class="field-input" style="width:80px;height:32px;font-size:13px;text-align:right" value="€ 0.00">
+              </div>
+              <div class="totals-divider"></div>
+              <div class="totals-row">
+                <span class="totals-total-label">Total (EUR)</span>
+                <span class="totals-total-val">€0.00</span>
+              </div>
+              <div class="totals-row mt-2">
+                <span class="totals-label" style="font-size:13px">Conversion Rate (to INR)</span>
+                <div style="display:flex;align-items:center;gap:4px">
+                  <input class="field-input" style="width:60px;height:32px;font-size:13px" value="90">
+                  <span style="background:var(--green-subtle);border:1px solid var(--border);border-radius:3px;font-size:12px;color:var(--muted);padding:2px 6px">INR</span>
+                </div>
+              </div>
+              <div class="totals-row">
+                <span class="totals-label">Total (INR)</span>
+                <span class="totals-val bold" style="font-weight:700">₹0.00</span>
+              </div>
+              <div class="totals-divider"></div>
+              <span class="totals-words">Total in Words</span>
+              <div class="totals-words-val">Zero Euros Only</div>
+            </div>
+          </div>
+          <!-- Block 6: Signature -->
+          <div class="form-block form-block-pad">
+            <div class="sig-zone">
+              <span style="font-size:20px;color:var(--muted)">✒</span>
+              <span>Add Signature</span>
+            </div>
+          </div>
+          <!-- Block 7: Terms -->
+          <div class="form-block">
+            <div class="terms-header">
+              <span class="terms-title">Terms and Conditions</span>
+              <button class="term-btn">×</button>
+            </div>
+            <div class="term-row">
+              <span class="term-num">01.</span>
+              <span class="term-text">Payment is due within 30 days of invoice date.</span>
+              <div class="term-controls">
+                <button class="term-btn">×</button>
+                <button class="term-btn">↓</button>
+                <button class="term-btn">↑</button>
+              </div>
+            </div>
+            <div class="term-row">
+              <span class="term-num">02.</span>
+              <span class="term-text">Late payments may incur a 2% monthly interest charge.</span>
+              <div class="term-controls">
+                <button class="term-btn">×</button>
+                <button class="term-btn">↓</button>
+                <button class="term-btn">↑</button>
+              </div>
+            </div>
+            <a class="add-term">＋ Add New Term</a>
+          </div>
+        </div>
+        <!-- RIGHT PREVIEW -->
+        <div class="preview-panel">
+          <div class="preview-label">Live Preview</div>
+          <div class="preview-doc">
+            <div class="preview-doc-logo">⚡ InvoiceFlow</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--black)">EXPORT INVOICE</div>
+                <div class="preview-doc-num">INV-0006</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:10px;color:var(--muted);font-family:'Manrope',sans-serif">BILLED BY</div>
+                <div style="font-size:12px;font-weight:700;color:var(--black);font-family:'Manrope',sans-serif">Praba</div>
+              </div>
+            </div>
+            <div class="preview-doc-div"></div>
+            <div class="preview-doc-row"><span>Issue Date</span><span>29 Apr 2026</span></div>
+            <div class="preview-doc-row"><span>Due Date</span><span>—</span></div>
+            <div class="preview-doc-row"><span>Currency</span><span>EUR (€)</span></div>
+            <div class="preview-doc-div"></div>
+            <div style="background:var(--navy);padding:6px 10px;border-radius:3px;display:grid;grid-template-columns:2fr 1fr 1fr;gap:4px;margin-bottom:8px">
+              <span style="font-size:9px;color:#fff;font-family:'Manrope',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Item</span>
+              <span style="font-size:9px;color:#fff;font-family:'Manrope',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;text-align:right">Qty</span>
+              <span style="font-size:9px;color:#fff;font-family:'Manrope',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;text-align:right">Total</span>
+            </div>
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:4px;padding:4px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:11px;color:var(--muted);font-family:'Manrope',sans-serif;">—</span>
+              <span style="font-size:11px;color:var(--muted);text-align:right;font-family:'Manrope',sans-serif;">1</span>
+              <span style="font-size:11px;color:var(--muted);text-align:right;font-family:'Manrope',sans-serif;">€0.00</span>
+            </div>
+            <div class="preview-doc-div"></div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--black)">Total (EUR)</span>
+              <span style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--black)">€0.00</span>
+            </div>
+            <div style="margin-top:8px;font-size:10px;color:var(--muted);font-style:italic;font-family:'Manrope',sans-serif;">Zero Euros Only</div>
+          </div>
+        </div>
+      </div>
+      <!-- Bottom bar -->
+      <div class="bottom-bar">
+        <button class="btn" style="border:1px solid var(--black);background:#fff;color:var(--black);font-size:13px;height:40px;padding:0 20px">Save as Draft</button>
+        <button class="btn btn-red">Submit Invoice</button>
+        <button class="btn btn-outline-navy">Preview PDF</button>
+      </div>
+    </div>
+
+    <!-- PAGE: CLIENTS -->
+    <div id="page-clients" class="page-content" style="display:none;flex-direction:column;min-height:100vh">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-title">Clients</div>
+          <div class="page-sub">Manage your professional relationships and global tax compliance</div>
+        </div>
+        <div class="page-header-right">
+          <button class="btn btn-green-sm" onclick="openModal('client-modal')">+ Add New Client</button>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="clients-grid">
+          <div class="client-card">
+            <div class="client-card-avatar">AC</div>
+            <div class="client-card-name">Acme Corp</div>
+            <div class="client-card-type">Company</div>
+            <div class="client-card-meta">billing@acme.com<br>United States</div>
+            <div class="client-card-footer">
+              <span class="client-card-count">3 Invoices</span>
+              <a class="panel-link">View →</a>
+            </div>
+          </div>
+          <div class="client-card">
+            <div class="client-card-avatar" style="background:#CC3A3A">TN</div>
+            <div class="client-card-name">TechNova Ltd</div>
+            <div class="client-card-type">Company</div>
+            <div class="client-card-meta">accounts@technova.io<br>United Kingdom</div>
+            <div class="client-card-footer">
+              <span class="client-card-count">1 Invoice</span>
+              <a class="panel-link">View →</a>
+            </div>
+          </div>
+          <div class="client-card">
+            <div class="client-card-avatar" style="background:#D97706">SP</div>
+            <div class="client-card-name">Skyline Partners</div>
+            <div class="client-card-type">Company</div>
+            <div class="client-card-meta">finance@skyline.co<br>Germany</div>
+            <div class="client-card-footer">
+              <span class="client-card-count">2 Invoices</span>
+              <a class="panel-link">View →</a>
+            </div>
+          </div>
+          <div class="client-card" style="border:1px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;cursor:pointer" onclick="openModal('client-modal')">
+            <span style="font-size:32px;color:var(--muted)">＋</span>
+            <span style="font-size:13px;color:var(--muted);margin-top:8px">Add New Client</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: ITEM MASTER -->
+    <div id="page-items" class="page-content" style="display:none;flex-direction:column;min-height:100vh">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-title">Item Master</div>
+          <div class="page-sub">Manage your products and services with HSN/SAC codes</div>
+        </div>
+        <div class="page-header-right">
+          <button class="btn btn-green-sm" onclick="openModal('item-modal')">+ New Item Entry</button>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="table-container">
+          <table class="data-table">
+            <thead class="table-head">
+              <tr>
+                <th>Item Name</th>
+                <th style="width:160px">HSN/SAC Code</th>
+                <th style="width:160px">Created Date</th>
+                <th style="width:100px;text-align:center">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="table-body">
+              <tr>
+                <td>Data Entry & Conversion Services</td>
+                <td class="muted">998314</td>
+                <td class="muted">10 Jan 2026</td>
+                <td><div class="table-actions" style="justify-content:center">✎ 🗑</div></td>
+              </tr>
+              <tr>
+                <td>Software Development & Processing</td>
+                <td class="muted">998313</td>
+                <td class="muted">10 Jan 2026</td>
+                <td><div class="table-actions" style="justify-content:center">✎ 🗑</div></td>
+              </tr>
+              <tr>
+                <td>IT Consulting</td>
+                <td class="muted">—</td>
+                <td class="muted">22 Feb 2026</td>
+                <td><div class="table-actions" style="justify-content:center">✎ 🗑</div></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="pagination">
+            <span class="page-info">Showing 1–3 of 3 items</span>
+            <div class="page-nums">
+              <button class="page-arrow">‹</button>
+              <span class="page-num active">1</span>
+              <button class="page-arrow">›</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: SETTINGS -->
+    <div id="page-settings" class="page-content" style="display:none;flex-direction:column;min-height:100vh">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-title">Organization Details</div>
+          <div class="page-sub">Manage your business profile and invoice defaults</div>
+        </div>
+        <div class="page-header-right">
+          <button class="btn btn-ghost">✎ Edit</button>
+        </div>
+      </div>
+      <div class="settings-layout">
+        <!-- Left nav -->
+        <div class="settings-nav">
+          <div class="settings-nav-item active">
+            <span class="nav-icon">🏢</span>
+            <span class="nav-lbl">Business Profile</span>
+          </div>
+          <div class="settings-nav-item">
+            <span class="nav-icon">🎨</span>
+            <span class="nav-lbl">Branding</span>
+          </div>
+          <div class="settings-nav-item">
+            <span class="nav-icon">#</span>
+            <span class="nav-lbl">Invoice Defaults</span>
+          </div>
+          <div class="settings-nav-item">
+            <span class="nav-icon">🏦</span>
+            <span class="nav-lbl">Bank Details</span>
+          </div>
+        </div>
+        <!-- Right content -->
+        <div class="settings-sections">
+          <!-- Business Profile -->
+          <div class="settings-section">
+            <div class="section-header">
+              <div class="section-icon-tile">🏢</div>
+              <span class="section-title">Business Profile</span>
+            </div>
+            <div class="settings-field-grid">
+              <div class="settings-field settings-field-full">
+                <div class="settings-label">Business Legal Name</div>
+                <div class="settings-val">Praba Solutions Pvt. Ltd.</div>
+              </div>
+              <div class="settings-field">
+                <div class="settings-label">Email Address</div>
+                <div class="settings-val">praba@solutions.io</div>
+              </div>
+              <div class="settings-field">
+                <div class="settings-label">Phone Number</div>
+                <div class="settings-val">+91 98765 43210</div>
+              </div>
+              <div class="settings-field">
+                <div class="settings-label">City</div>
+                <div class="settings-val">Chennai</div>
+              </div>
+              <div class="settings-field">
+                <div class="settings-label">State / UT</div>
+                <div class="settings-val">Tamil Nadu</div>
+              </div>
+              <div class="settings-field">
+                <div class="settings-label">Country</div>
+                <div class="settings-val">India</div>
+              </div>
+              <div class="settings-field">
+                <div class="settings-label">Postal Code</div>
+                <div class="settings-val">600001</div>
+              </div>
+              <div class="settings-field">
+                <div class="settings-label">GSTIN</div>
+                <div class="settings-val">33AABCP1234A1ZK</div>
+              </div>
+              <div class="settings-field">
+                <div class="settings-label">PAN Number</div>
+                <div class="settings-val">AABCP1234A</div>
+              </div>
+              <div class="settings-field">
+                <div class="settings-label">IE Code</div>
+                <div class="settings-val">AABCP1234</div>
+              </div>
+              <div class="settings-field">
+                <div class="settings-label">CIN Number</div>
+                <div class="settings-val">U72200TN2020PTC123456</div>
+              </div>
+            </div>
+          </div>
+          <!-- Branding -->
+          <div class="settings-section">
+            <div class="section-header">
+              <div class="section-icon-tile">🎨</div>
+              <span class="section-title">Branding & Identity</span>
+            </div>
+            <div style="display:flex;gap:24px;flex-wrap:wrap">
+              <div>
+                <div class="settings-label" style="margin-bottom:8px">Company Logo</div>
+                <div class="upload-zone" style="width:200px;height:120px">
+                  <span style="font-size:24px;color:var(--muted)">🖼</span>
+                  <span>Click to upload logo</span>
+                </div>
+              </div>
+              <div>
+                <div class="settings-label" style="margin-bottom:8px">Authorized Signature</div>
+                <div class="upload-zone" style="width:200px;height:100px">
+                  <span style="font-size:24px;color:var(--muted)">✒</span>
+                  <span>Click to upload signature</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Invoice Defaults -->
+          <div class="settings-section">
+            <div class="section-header">
+              <div class="section-icon-tile">#</div>
+              <span class="section-title">Invoice Defaults</span>
+            </div>
+            <div style="display:flex;gap:24px">
+              <div class="settings-field">
+                <div class="settings-label">Invoice Prefix</div>
+                <div class="settings-val">INV</div>
+              </div>
+              <div class="settings-field">
+                <div class="settings-label">Next Counter</div>
+                <div class="settings-val">6</div>
+              </div>
+            </div>
+          </div>
+          <!-- Bank Details -->
+          <div class="settings-section">
+            <div class="section-header">
+              <div class="section-icon-tile">🏦</div>
+              <span class="section-title">Bank Details</span>
+            </div>
+            <div class="settings-field-grid">
+              <div class="settings-field settings-field-full">
+                <div class="settings-label">Account Holder Name</div>
+                <div class="settings-val">Praba Solutions Pvt. Ltd.</div>
+              </div>
+              <div class="settings-field settings-field-full">
+                <div class="settings-label">Bank Name</div>
+                <div class="settings-val">HDFC Bank</div>
+              </div>
+              <div class="settings-field settings-field-full">
+                <div class="settings-label">Account Number</div>
+                <div class="settings-val">XXXXXXXXXXXX5678</div>
+              </div>
+              <div class="settings-field">
+                <div class="settings-label">IFSC Code</div>
+                <div class="settings-val">HDFC0001234</div>
+              </div>
+              <div class="settings-field">
+                <div class="settings-label">SWIFT Code</div>
+                <div class="settings-val">HDFCINBB</div>
+              </div>
+              <div class="settings-field settings-field-full">
+                <div class="settings-label">IBAN Number</div>
+                <div class="settings-val">IN00 HDFC 0001 2340 0012 3456</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content-area -->
+</div><!-- /screen-app -->
+
+<!-- ============ MODAL: NEW CLIENT ============ -->
+<div class="modal-overlay" id="client-modal">
+  <div class="modal modal-md">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon-tile">👤</div>
+        <div>
+          <div class="modal-title">New Client Registration</div>
+          <div class="modal-subtitle">Unified Business Management</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('client-modal')">×</button>
+    </div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" onclick="switchTab(this,'client-tab-1')">General</div>
+      <div class="modal-tab" onclick="switchTab(this,'client-tab-2')">Contact & Address</div>
+      <div class="modal-tab" onclick="switchTab(this,'client-tab-3')">Tax Info</div>
+      <div class="modal-tab" onclick="switchTab(this,'client-tab-4')">Billing & Settings</div>
+    </div>
+    <div class="modal-body">
+      <!-- Tab 1 -->
+      <div id="client-tab-1" class="tab-pane active">
+        <div class="logo-upload-zone">
+          <span style="font-size:24px">🖼</span>
+          <span>Upload Logo</span>
+        </div>
+        <div class="modal-field">
+          <div class="field-label">Client Type</div>
+          <div class="radio-group mt-1">
+            <label class="radio-label"><input type="radio" name="client-type" checked> Individual</label>
+            <label class="radio-label"><input type="radio" name="client-type"> Company</label>
+          </div>
+        </div>
+        <div class="modal-field">
+          <label class="field-label">Business Name *</label>
+          <input class="field-input w-full" placeholder="e.g. Acme Corp" style="width:100%">
+        </div>
+        <div class="modal-field-row">
+          <div class="field-group">
+            <label class="field-label">Client Industry</label>
+            <select class="field-select" style="width:100%"><option>Select Industry</option><option>Technology</option><option>Finance</option><option>Healthcare</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Business Alias</label>
+            <input class="field-input" placeholder="Short Name">
+          </div>
+        </div>
+        <div class="modal-field">
+          <label class="field-label">Unique Key</label>
+          <input class="field-input readonly w-full" style="width:100%" value="CLT-2026-0004" readonly>
+        </div>
+      </div>
+      <!-- Tab 2 -->
+      <div id="client-tab-2" class="tab-pane">
+        <div class="modal-field-row">
+          <div class="field-group">
+            <label class="field-label">Email Address</label>
+            <input class="field-input" placeholder="client@example.com">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Phone Number</label>
+            <input class="field-input" placeholder="+91 00000 00000">
+          </div>
+        </div>
+        <label class="checkbox-row"><input type="checkbox"> Show Email in Invoice</label>
+        <label class="checkbox-row"><input type="checkbox"> Show Phone in Invoice</label>
+        <div class="modal-field-row">
+          <div class="field-group">
+            <label class="field-label">Country</label>
+            <select class="field-select" style="width:100%"><option>India</option><option>United States</option><option>United Kingdom</option><option>Germany</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">State / Province</label>
+            <select class="field-select" style="width:100%"><option>Select State</option><option>Tamil Nadu</option><option>Karnataka</option><option>Maharashtra</option></select>
+          </div>
+        </div>
+        <div class="modal-field-row">
+          <div class="field-group">
+            <label class="field-label">City / Town</label>
+            <input class="field-input" placeholder="City">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Postal Code</label>
+            <input class="field-input" placeholder="600001">
+          </div>
+        </div>
+      </div>
+      <!-- Tab 3 -->
+      <div id="client-tab-3" class="tab-pane">
+        <div class="modal-field-row">
+          <div class="field-group">
+            <label class="field-label">Business GSTIN</label>
+            <input class="field-input" placeholder="22AAAAA0000A1Z5">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Business PAN Number</label>
+            <input class="field-input" placeholder="ABCDE1234F">
+          </div>
+        </div>
+        <div class="modal-field">
+          <label class="field-label">Tax Treatment</label>
+          <select class="field-select" style="width:100%"><option>Select Treatment</option><option>Regular</option><option>SEZ</option><option>Export</option></select>
+        </div>
+      </div>
+      <!-- Tab 4 -->
+      <div id="client-tab-4" class="tab-pane">
+        <div class="modal-field-row">
+          <div class="field-group">
+            <label class="field-label">Default Due Date (Days)</label>
+            <input class="field-input" value="15" type="number">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Payment Account</label>
+            <input class="field-input" placeholder="Select Payment Account">
+          </div>
+        </div>
+        <div class="modal-field">
+          <label class="field-label">Select UPI ID</label>
+          <input class="field-input w-full" style="width:100%" placeholder="Enter UPI ID">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="cancel-text" onclick="closeModal('client-modal')">Cancel</button>
+      <button class="btn btn-navy">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: NEW ITEM ============ -->
+<div class="modal-overlay" id="item-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div class="modal-title">New Item</div>
+      <button class="modal-close" onclick="closeModal('item-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label class="field-label">Item Name <span style="color:var(--red)">*</span></label>
+        <input class="field-input" style="width:100%" placeholder="Enter product or service name">
+      </div>
+      <div class="modal-field">
+        <label class="field-label">HSN / SAC Code</label>
+        <input class="field-input" style="width:100%" placeholder="Enter HSN or SAC code">
+        <div style="font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:4px">Leave Blank if Not Applicable</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="cancel-text" onclick="closeModal('item-modal')">Cancel</button>
+      <button class="btn btn-green-sm" style="height:40px">✓ Create Item</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== SCREEN MANAGEMENT ==========
+function goToApp(){
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-app').classList.add('active');
+  showPage('dashboard');
+}
+
+function showPage(name){
+  document.querySelectorAll('.page-content').forEach(p=>p.style.display='none');
+  const p=document.getElementById('page-'+name);
+  if(p){p.style.display='flex';}
+}
+
+function switchPage(el,name){
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  if(el) el.classList.add('active');
+  showPage(name);
+  if(name==='create-invoice') return;
+}
+
+function showCreateInvoice(){
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  showPage('create-invoice');
+}
+
+// ========== SIDEBAR ==========
+let sidebarCollapsed=false;
+function toggleSidebar(){
+  sidebarCollapsed=!sidebarCollapsed;
+  const sb=document.getElementById('sidebar');
+  sb.classList.toggle('collapsed',sidebarCollapsed);
+  document.body.classList.toggle('sidebar-collapsed',sidebarCollapsed);
+  document.getElementById('toggle-icon').textContent=sidebarCollapsed?'▶':'◀';
+}
+
+// Tooltip system for collapsed sidebar
+const tooltip=document.getElementById('sidebar-tooltip');
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('mouseenter',e=>{
+    if(!sidebarCollapsed) return;
+    const rect=item.getBoundingClientRect();
+    tooltip.textContent=item.dataset.label;
+    tooltip.style.top=(rect.top+rect.height/2-14)+'px';
+    tooltip.style.left='64px';
+    tooltip.classList.add('show');
+  });
+  item.addEventListener('mouseleave',()=>tooltip.classList.remove('show'));
+});
+
+// ========== PASSWORD TOGGLE ==========
+function togglePw(){
+  const inp=document.getElementById('pw-input');
+  inp.type=inp.type==='password'?'text':'password';
+}
+
+// ========== PERIOD TABS ==========
+document.querySelectorAll('.period-tab').forEach(t=>{
+  t.addEventListener('click',function(){
+    this.closest('.period-tabs').querySelectorAll('.period-tab').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// ========== FILTER TABS ==========
+document.querySelectorAll('.filter-tab').forEach(t=>{
+  t.addEventListener('click',function(){
+    this.closest('.filter-tabs').querySelectorAll('.filter-tab').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// ========== SETTINGS NAV ==========
+document.querySelectorAll('.settings-nav-item').forEach(item=>{
+  item.addEventListener('click',function(){
+    document.querySelectorAll('.settings-nav-item').forEach(i=>i.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// ========== MODALS ==========
+function openModal(id){
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+}
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click',function(e){
+    if(e.target===this) this.classList.remove('open');
+  });
+});
+
+// ========== TAB SWITCHER (modal) ==========
+function switchTab(tabEl,paneId){
+  const modal=tabEl.closest('.modal');
+  modal.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active'));
+  modal.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  tabEl.classList.add('active');
+  const pane=document.getElementById(paneId);
+  if(pane) pane.classList.add('active');
+}
+
+// ========== KEYBOARD ==========
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
+  }
+});
+
+// Init
+document.addEventListener('DOMContentLoaded',()=>{
+  showPage('dashboard');
+});
+</script>
+</body>
+</html>

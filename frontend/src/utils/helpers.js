@@ -1,27 +1,54 @@
 // Number to words (Indian numbering system)
 export const numberToWords = (num, currency = 'INR') => {
-  const majorCurrency = currency === 'INR' ? 'Rupees' : currency === 'USD' ? 'Dollars' : currency === 'EUR' ? 'Euros' : currency === 'GBP' ? 'Pounds' : currency;
-  const minorCurrency = currency === 'INR' ? 'Paise' : 'Cents';
+  if (!num || isNaN(num)) return `ZERO ONLY`;
+  
+  const ones = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
+    'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
+  const tens = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
 
-  if (!num || isNaN(num)) return `Zero ${majorCurrency} Only`;
-  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-
-  const convert = (n) => {
+  const convertIndian = (n) => {
     if (n < 20) return ones[n];
     if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
-    if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + convert(n % 100) : '');
-    if (n < 100000) return convert(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 ? ' ' + convert(n % 1000) : '');
-    if (n < 10000000) return convert(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 ? ' ' + convert(n % 100000) : '');
-    return convert(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 ? ' ' + convert(n % 10000000) : '');
+    if (n < 1000) return ones[Math.floor(n / 100)] + ' HUNDRED' + (n % 100 ? ' ' + convertIndian(n % 100) : '');
+    if (n < 100000) return convertIndian(Math.floor(n / 1000)) + ' THOUSAND' + (n % 1000 ? ' ' + convertIndian(n % 1000) : '');
+    if (n < 10000000) return convertIndian(Math.floor(n / 100000)) + ' LAKH' + (n % 100000 ? ' ' + convertIndian(n % 100000) : '');
+    return convertIndian(Math.floor(n / 10000000)) + ' CRORE' + (n % 10000000 ? ' ' + convertIndian(n % 10000000) : '');
   };
+
+  const convertInternational = (n) => {
+    if (n < 20) return ones[n];
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+    if (n < 1000) return ones[Math.floor(n / 100)] + ' HUNDRED' + (n % 100 ? ' ' + convertInternational(n % 100) : '');
+    if (n < 1000000) return convertInternational(Math.floor(n / 1000)) + ' THOUSAND' + (n % 1000 ? ' ' + convertInternational(n % 1000) : '');
+    if (n < 1000000000) return convertInternational(Math.floor(n / 1000000)) + ' MILLION' + (n % 1000000 ? ' ' + convertInternational(n % 1000000) : '');
+    return convertInternational(Math.floor(n / 1000000000)) + ' BILLION' + (n % 1000000000 ? ' ' + convertInternational(n % 1000000000) : '');
+  };
+
+  const convert = currency === 'INR' ? convertIndian : convertInternational;
 
   const major = Math.floor(num);
   const minor = Math.round((num - major) * 100);
-  let result = convert(major) + ` ${majorCurrency}`;
-  if (minor > 0) result += ' and ' + convert(minor) + ` ${minorCurrency}`;
-  return result + ' Only';
+  
+  const getCurrencyLabels = (code) => {
+    const map = {
+      'INR': { major: ['RUPEE', 'RUPEES'], minor: ['PAISA', 'PAISE'] },
+      'USD': { major: ['DOLLAR', 'DOLLARS'], minor: ['CENT', 'CENTS'] },
+      'EUR': { major: ['EURO', 'EUROS'], minor: ['CENT', 'CENTS'] },
+      'GBP': { major: ['POUND', 'POUNDS'], minor: ['PENNY', 'PENCE'] }
+    };
+    return map[code] || { major: [code, code], minor: ['CENT', 'CENTS'] };
+  };
+
+  const labels = getCurrencyLabels(currency);
+  const majorLabel = major === 1 ? labels.major[0] : labels.major[1];
+  const minorLabel = minor === 1 ? labels.minor[0] : labels.minor[1];
+
+  let result = convert(major) + ' ' + majorLabel;
+  if (minor > 0) {
+    result += ' AND ' + convert(minor) + ' ' + minorLabel;
+  }
+  
+  return result + ' ONLY';
 };
 
 // Format currency
@@ -34,7 +61,11 @@ export const formatCurrency = (amount, currency = 'INR') => {
 // Format date
 export const formatDate = (date) => {
   if (!date) return '-';
-  return new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = d.toLocaleString('en-IN', { month: 'short' });
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
 };
 
 // Calculate invoice totals

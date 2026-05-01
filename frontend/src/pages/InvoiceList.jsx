@@ -1,17 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { invoiceApi } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/helpers';
-import { Plus, Search, Trash2, Eye, Download, FileText, Bell, MoreVertical, CheckCircle2, Clock, AlertCircle, Send, FileEdit } from 'lucide-react';
+import { 
+  Plus, Search, Trash2, Eye, Download, 
+  FileText, Bell, MoreVertical, 
+  Send, FileEdit, Trash
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const STATUSES = ['all', 'draft', 'sent', 'paid', 'overdue', 'cancelled'];
 
 const InvoiceList = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialSearch = searchParams.get('search') || '';
+  
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(initialSearch);
   const [status, setStatus] = useState('all');
   const [downloading, setDownloading] = useState(null);
 
@@ -19,7 +26,7 @@ const InvoiceList = () => {
     setLoading(true);
     try {
       const { data } = await invoiceApi.getAll({ search, status, limit: 50 });
-      setInvoices(data.invoices || []);
+      setInvoices(Array.isArray(data) ? data : (data.invoices || []));
     } catch { toast.error('Failed to load invoices'); }
     finally { setLoading(false); }
   };
@@ -43,67 +50,53 @@ const InvoiceList = () => {
       const { data } = await invoiceApi.downloadPDF(id);
       const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }));
       const a = document.createElement('a');
-      a.href = url; a.download = `${num}.pdf`; a.click();
+      const safeName = (num || 'Invoice').replace(/[/\\?%*:|"<>]/g, '_');
+      a.href = url; a.download = `${safeName}.pdf`; a.click();
       window.URL.revokeObjectURL(url);
       toast.success('PDF downloaded!');
     } catch { toast.error('PDF generation failed'); }
     finally { setDownloading(null); }
   };
 
-  const getStatusConfig = (s) => {
-    switch(s.toLowerCase()) {
-      case 'paid': return { color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: CheckCircle2 };
-      case 'overdue': return { color: 'text-rose-700', bg: 'bg-rose-50 border-rose-200', icon: AlertCircle };
-      case 'sent': return { color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200', icon: Send };
-      case 'draft': return { color: 'text-slate-700', bg: 'bg-slate-100 border-slate-200', icon: FileEdit };
-      case 'cancelled': return { color: 'text-slate-500', bg: 'bg-slate-50 border-slate-200', icon: AlertCircle };
-      default: return { color: 'text-slate-700', bg: 'bg-slate-50 border-slate-200', icon: FileText };
-    }
-  };
-
-  const StatusBadge = ({ status }) => {
-    const config = getStatusConfig(status);
-    const Icon = config.icon;
-    return (
-      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] uppercase tracking-wider font-bold border ${config.bg} ${config.color}`}>
-        <Icon size={12} strokeWidth={3} />
-        {status}
-      </span>
-    );
+  const getStatusClass = (s) => {
+    const status = s?.toLowerCase();
+    if (status === 'paid') return 'status-paid';
+    if (status === 'sent') return 'status-sent';
+    if (status === 'overdue') return 'status-overdue';
+    if (status === 'draft') return 'status-draft';
+    if (status === 'cancelled') return 'status-cancelled';
+    return 'status-pending';
   };
 
   return (
-    <div className="flex flex-col min-h-screen animate-fade-in pb-12">
-      {/* Sticky Top Header */}
-      <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-slate-200/80 px-6 py-4 md:px-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Invoices</h1>
-          <p className="text-slate-500 text-sm font-medium mt-0.5">Manage and track your billings</p>
+    <div className="flex flex-col min-h-screen bg-[#FAFAF8] animate-fade-in">
+      
+      {/* PAGE HEADER */}
+      <header className="h-16 bg-white border-b border-[#E4E4E0] flex items-center justify-between px-8 sticky top-0 z-20">
+        <div className="page-header-left">
+          <h1 className="text-[26px] font-bold text-[#0C0E10] leading-tight font-heading">Invoices</h1>
+          <p className="text-[13px] text-[#6B7280] mt-0.5 font-medium">Manage and track your billings</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-all relative">
-            <Bell size={20} strokeWidth={2.5} />
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
-          </button>
-          <Link to="/invoices/new" className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-primary-500/25 transition-all hover:-translate-y-0.5 active:scale-95">
-            <Plus size={18} strokeWidth={3} /> Create Invoice
+          <Link to="/invoices/new" className="btn-green-sm ml-2 flex items-center gap-2 h-9 px-4 rounded-[5px] bg-[#95BF47] text-[#02172E] font-bold text-sm hover:bg-[#85AF37] transition-all">
+            <Plus size={16} strokeWidth={3} /> Create Invoice
           </Link>
         </div>
       </header>
 
-      <div className="px-6 py-8 md:px-10 max-w-7xl mx-auto w-full flex-1">
+      <div className="page-body p-8 px-8 max-w-[1600px] mx-auto w-full">
         
-        {/* Filters & Search */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 mb-8">
-          <div className="flex bg-slate-200/50 p-1 rounded-xl shadow-inner border border-slate-200/50 overflow-x-auto custom-scrollbar">
+        {/* CONTROL BAR */}
+        <div className="h-[52px] bg-white border border-[#E4E4E0] rounded-[5px] flex items-center justify-between px-5 mb-4 shadow-sm">
+          <div className="flex items-center gap-0 h-full">
             {STATUSES.map(s => (
               <button 
                 key={s} 
                 onClick={() => setStatus(s)}
-                className={`px-5 py-2 text-sm font-bold rounded-lg transition-all whitespace-nowrap ${
+                className={`h-[52px] px-4 text-[13px] font-medium transition-all border-b-2 whitespace-nowrap ${
                   status === s 
-                    ? 'bg-white text-slate-900 shadow-sm' 
-                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'
+                    ? 'text-[#0C0E10] font-bold border-[#95BF47]' 
+                    : 'text-[#6B7280] border-transparent hover:text-[#0C0E10]'
                 }`}
               >
                 {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -111,86 +104,103 @@ const InvoiceList = () => {
             ))}
           </div>
 
-          <div className="relative w-full lg:w-80 group">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-600 transition-colors" />
+          <div className="relative w-72 flex items-center bg-white border border-[#E4E4E0] rounded-[5px] h-9 px-3 focus-within:border-[#95BF47] focus-within:ring-4 focus-within:ring-[#95BF47]/10 transition-all">
+            <Search size={16} className="text-[#6B7280] flex-shrink-0" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search invoices or clients..."
-              className="w-full bg-white border border-slate-200 text-slate-800 font-semibold placeholder:text-slate-400 placeholder:font-medium rounded-xl pl-11 pr-4 py-2.5 focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all shadow-sm"
+              className="w-full bg-transparent border-none outline-none pl-2.5 text-[13px] font-medium text-[#0C0E10] placeholder:text-[#6B7280]"
             />
           </div>
         </div>
 
-        {/* Content Area */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-32">
-            <div className="w-12 h-12 border-4 border-slate-200 border-t-primary-600 rounded-full animate-spin mb-4" />
-            <p className="text-slate-500 font-bold tracking-wide animate-pulse">Loading Invoices...</p>
-          </div>
-        ) : invoices.length === 0 ? (
-          <div className="bg-white rounded-[2rem] border border-slate-200 border-dashed p-12 md:p-20 text-center max-w-3xl mx-auto mt-6 shadow-sm animate-slide-up">
-            <div className="w-28 h-28 bg-gradient-to-tr from-primary-50 to-indigo-50 border-8 border-white rounded-full shadow-lg flex items-center justify-center mx-auto mb-8">
-              <FileText size={48} className="text-primary-500" strokeWidth={1.5} />
+        {/* TABLE CONTAINER */}
+        <div className="panel shadow-sm min-h-[400px]">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-32">
+              <div className="w-10 h-10 border-4 border-[#95BF47]/20 border-t-[#95BF47] rounded-full animate-spin mb-4" />
+              <p className="text-[#6B7280] font-bold text-sm animate-pulse">Loading Invoices...</p>
             </div>
-            <h3 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">No invoices yet</h3>
-            <p className="text-slate-500 font-medium mb-10 max-w-md mx-auto leading-relaxed">
-              Get paid faster by creating and sending your first professional invoice in minutes.
-            </p>
-            <Link to="/invoices/new" className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-8 py-3.5 rounded-xl font-bold shadow-xl shadow-slate-900/20 transition-all hover:-translate-y-1 hover:shadow-2xl active:scale-95">
-              <Plus size={20} strokeWidth={3}/> Create your first invoice
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-slide-up">
-            {invoices.map(inv => (
-              <div 
-                key={inv._id} 
-                onClick={() => navigate(`/invoices/${inv._id}`)}
-                className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col relative overflow-hidden"
-              >
-                {/* Decorative top accent */}
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-slate-100 to-transparent group-hover:via-primary-400 transition-colors duration-500"></div>
-
-                <div className="flex justify-between items-start mb-5">
-                  <StatusBadge status={inv.status} />
-                  
-                  <div className="relative z-10" onClick={e => e.stopPropagation()}>
-                    <button className="p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 rounded-lg transition-colors">
-                      <MoreVertical size={18} strokeWidth={2.5} />
-                    </button>
-                    {/* Quick actions popover on hover */}
-                    <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 shadow-xl shadow-slate-200/50 rounded-xl p-1.5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all translate-y-2 group-hover:translate-y-0 flex flex-col gap-1 min-w-[120px]">
-                       <button onClick={(e) => handleDownload(inv._id, inv.invoiceNumber, e)} disabled={downloading===inv._id} className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold hover:bg-slate-50 text-slate-700 rounded-lg transition-colors text-left">
-                         {downloading===inv._id ? <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"/> : <Download size={14} strokeWidth={2.5}/>}
-                         Download
-                       </button>
-                       <button onClick={(e) => handleDelete(inv._id, inv.invoiceNumber, e)} className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold hover:bg-rose-50 text-rose-600 rounded-lg transition-colors text-left">
-                         <Trash2 size={14} strokeWidth={2.5}/>
-                         Delete
-                       </button>
-                    </div>
-                  </div>
-                </div>
-
-                <h4 className="text-slate-400 font-bold text-[11px] tracking-widest uppercase mb-1">{inv.invoiceNumber}</h4>
-                <h3 className="text-lg font-black text-slate-900 mb-5 line-clamp-1" title={inv.clientName || 'No Client'}>{inv.clientName || 'Draft Invoice'}</h3>
-                
-                <div className="mt-auto pt-5 border-t border-slate-100 flex items-end justify-between">
-                  <div>
-                    <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
-                      <Clock size={12} strokeWidth={2.5} /> Due {formatDate(inv.dueDate)}
-                    </p>
-                    <p className="text-2xl font-black text-slate-900 tracking-tight">{formatCurrency(inv.total, inv.currency)}</p>
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-primary-50 group-hover:text-primary-600 group-hover:border-primary-100 transition-all shadow-sm">
-                    <Eye size={18} strokeWidth={2.5} />
-                  </div>
-                </div>
+          ) : invoices.length === 0 ? (
+            <div className="empty-state py-24 flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-[#FAFAF8] rounded-full flex items-center justify-center mb-6 border border-[#E4E4E0]">
+                <FileText size={32} className="text-[#6B7280]" />
               </div>
-            ))}
-          </div>
-        )}
+              
+              {status === 'all' && search === '' ? (
+                <>
+                  <h3 className="text-[22px] font-bold text-[#0C0E10] font-heading mb-2">No invoices found</h3>
+                  <p className="text-[14px] text-[#6B7280] max-w-sm mb-8 leading-relaxed">
+                    Get started by creating your first professional invoice in minutes.
+                  </p>
+                  <Link to="/invoices/new" className="btn-navy h-11 px-8 rounded-[5px] text-sm flex items-center gap-2">
+                    <Plus size={18} strokeWidth={3} /> Create your first invoice
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-[22px] font-bold text-[#0C0E10] font-heading mb-2">No results matching filters</h3>
+                  <p className="text-[14px] text-[#6B7280] max-w-sm mb-8 leading-relaxed">
+                    We couldn't find any {status !== 'all' ? status : ''} invoices {search ? `matching "${search}"` : ''}.
+                  </p>
+                  <button 
+                    onClick={() => { setStatus('all'); setSearch(''); }}
+                    className="text-[#95BF47] font-bold text-[14px] hover:underline"
+                  >
+                    Clear all filters
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-[#02172E] text-white">
+                  <tr>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[40px]"><input type="checkbox" className="w-4 h-4 accent-[#95BF47] rounded" /></th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[180px]">Invoice No</th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider">Client Name</th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[140px]">Issue Date</th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[140px]">Due Date</th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[160px] text-right">Amount</th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[140px]">Status</th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[100px] text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E4E4E0]">
+                  {invoices.map(inv => (
+                      <tr 
+                        key={inv.id || inv._id} 
+                        className="hover:bg-[#F3F8E8] transition-all group cursor-pointer"
+                        onClick={() => navigate(`/invoices/${inv.id || inv._id}/edit`)}
+                      >
+                      <td className="px-6 py-4" onClick={e => e.stopPropagation()}><input type="checkbox" className="w-4 h-4 accent-[#95BF47] rounded" /></td>
+                      <td className="px-6 py-4 text-[14px] font-bold text-[#0C0E10] whitespace-nowrap">{inv.invoiceNumber}</td>
+                      <td className="px-6 py-4 text-[14px] text-[#0C0E10]">{inv.clientName || 'Draft'}</td>
+                      <td className="px-6 py-4 text-[13px] text-[#6B7280]">{formatDate(inv.invoiceDate)}</td>
+                      <td className="px-6 py-4 text-[13px] text-[#6B7280]">{formatDate(inv.dueDate)}</td>
+                      <td className="px-6 py-4 text-[14px] font-bold text-[#0C0E10] text-right">{formatCurrency(inv.total, inv.currency)}</td>
+                      <td className="px-6 py-4">
+                        <span className={`status-badge ${getStatusClass(inv.status)}`}>
+                          {inv.status || 'Draft'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-3 transition-all">
+                          <button onClick={() => navigate(`/invoices/${inv.id || inv._id}`)} className="text-[#6B7280] hover:text-[#95BF47] transition-all" title="View"><Eye size={16}/></button>
+                          <button onClick={(e) => handleDownload(inv.id || inv._id, inv.invoiceNumber, e)} className="text-[#6B7280] hover:text-[#95BF47] transition-all" title="Download">{downloading===(inv.id || inv._id) ? <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-[#95BF47] rounded-full animate-spin"/> : <Download size={16}/>}</button>
+                          <button onClick={(e) => handleDelete(inv.id || inv._id, inv.invoiceNumber, e)} className="text-[#6B7280] hover:text-[#CC3A3A] transition-all" title="Delete"><Trash size={16}/></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );
