@@ -111,8 +111,8 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
   /* Label/value cell styles */
   /* Inline label:value row style */
   const inlineRow = { fontSize:'8.5pt', marginBottom:4, lineHeight:1.5 };
-  const inlineLbl = { color:'#6b7280', fontWeight:400, marginRight:4 };
-  const inlineVal = { fontWeight:700, color:'#000' };
+  const inlineLbl = { fontWeight:700, color:'#000', marginRight:4 };
+  const inlineVal = { color:'#000', fontWeight:400 };
 
   /* Stacked label/value (for Invoice Details column) */
   const lbl = { fontSize:'8pt', color:'#6b7280', display:'block', marginBottom:1 };
@@ -170,14 +170,18 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
                 {/* Col 1 – Invoice Details */}
                 <td style={{ borderRight:B, borderBottom:B, padding:'10px 10px', verticalAlign:'top' }}>
                   <div style={{ fontWeight:700, fontSize:'9pt', color:'#444', marginBottom:8 }}>Invoice Details</div>
-                  <div style={{ marginBottom:6, fontSize:'8pt' }}>
-                    <span style={{ color:'#6b7280' }}>Invoice No #  </span>
-                    <span style={{ fontWeight:700 }}>{invoiceNo}</span>
-                  </div>
-                  <div style={{ fontSize:'8pt' }}>
-                    <span style={{ color:'#6b7280' }}>Invoice Date  </span>
-                    <span style={{ fontWeight:700 }}>{invoiceDate}</span>
-                  </div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5pt' }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ fontWeight: 700, paddingBottom: 6, width: 95, color: '#000', whiteSpace: 'nowrap' }}>Invoice No #</td>
+                        <td style={{ paddingBottom: 6, fontWeight: 400, color: '#000', whiteSpace: 'nowrap' }}>{invoiceNo}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ fontWeight: 700, color: '#000', whiteSpace: 'nowrap' }}>Invoice Date</td>
+                        <td style={{ fontWeight: 400, color: '#000', whiteSpace: 'nowrap' }}>{invoiceDate}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </td>
 
                 {/* Col 2 – Billed By */}
@@ -187,14 +191,14 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
                   {finalByLines.map((l,i) => <div key={i} style={{ fontSize:'8.5pt', lineHeight:1.4 }}>{l}</div>)}
                   {settings.gstin && (
                     <div style={{ marginTop:5, fontSize:'8.5pt' }}>
-                      <span style={{ color:'#6b7280' }}>GSTIN: </span>
-                      <span>{settings.gstin}</span>
+                      <span style={{ fontWeight:700, color:'#000', marginRight:4 }}>GSTIN:</span>
+                      <span style={{ color:'#000' }}>{settings.gstin}</span>
                     </div>
                   )}
                   {settings.satelliteStation && (
                     <div style={{ marginTop:3, fontSize:'8.5pt' }}>
-                      <span style={{ color:'#6b7280' }}>Satellite Station: </span>
-                      <span>{settings.satelliteStation}</span>
+                      <span style={{ fontWeight:700, color:'#000', marginRight:4 }}>Satellite Station:</span>
+                      <span style={{ color:'#000' }}>{settings.satelliteStation}</span>
                     </div>
                   )}
                 </td>

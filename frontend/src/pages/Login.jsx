@@ -29,7 +29,7 @@ const Login = () => {
         <div className="hidden lg:flex w-[42%] bg-[#02172E] flex-col p-8 relative overflow-hidden">
           <div className="flex items-center gap-2 mb-3">
             <Zap className="text-[#95BF47]" size={20} />
-            <span className="text-[11px] font-bold text-white tracking-[3px] uppercase">InvoiceFlow</span>
+            <span className="text-[11px] font-bold text-white tracking-[3px] uppercase">Nxt Invoice</span>
           </div>
           <div className="w-10 h-[2px] bg-[#95BF47] mb-12"></div>
           

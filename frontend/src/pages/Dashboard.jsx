@@ -15,13 +15,10 @@ const Dashboard = () => {
   const [invoices, setInvoices] = useState([]);
   const [stats, setStats] = useState({ 
     totalCount: 0, 
-    paidCount: 0, 
-    sentCount: 0, 
-    pendingCount: 0, 
-    overdueCount: 0,
+    draftCount: 0, 
+    submittedCount: 0,
     totalRevenue: 0, 
-    pendingAmount: 0, 
-    overdueAmount: 0 
+    pendingAmount: 0
   });
   const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState([]);
@@ -32,24 +29,18 @@ const Dashboard = () => {
         const { data } = await invoiceApi.getAll({ limit: 500 });
         const inv = Array.isArray(data) ? data : (data.invoices || []);
         
-        const paid = inv.filter(i => i.status?.toLowerCase() === 'paid');
-        const sent = inv.filter(i => i.status?.toLowerCase() === 'sent');
-        const pending = inv.filter(i => ['pending', 'sent', 'partial'].includes(i.status?.toLowerCase()));
-        const overdue = inv.filter(i => i.status?.toLowerCase() === 'overdue');
+        const drafts    = inv.filter(i => i.status?.toLowerCase() === 'draft');
+        const submitted = inv.filter(i => i.status?.toLowerCase() === 'sent');
         
-        const revenue = paid.reduce((s, i) => s + (i.total || 0), 0);
-        const pendAmt = pending.reduce((s, i) => s + (i.total || 0), 0);
-        const overAmt = overdue.reduce((s, i) => s + (i.total || 0), 0);
+        const revenue  = submitted.reduce((s, i) => s + (i.total || 0), 0);
+        const pendAmt  = drafts.reduce((s, i) => s + (i.total || 0), 0);
 
         setStats({
-          totalCount: inv.length,
-          paidCount: paid.length,
-          sentCount: sent.length,
-          pendingCount: pending.length,
-          overdueCount: overdue.length,
-          totalRevenue: revenue,
-          pendingAmount: pendAmt,
-          overdueAmount: overAmt
+          totalCount:     inv.length,
+          draftCount:     drafts.length,
+          submittedCount: submitted.length,
+          totalRevenue:   revenue,
+          pendingAmount:  pendAmt
         });
 
         setInvoices(inv.slice(0, 5));
@@ -74,7 +65,7 @@ const Dashboard = () => {
           const imonth = idate.getMonth();
           const iyear = idate.getFullYear();
           const target = last6Months.find(m => m.month === imonth && m.year === iyear);
-          if (target && ['paid', 'sent'].includes(i.status?.toLowerCase())) {
+          if (target && i.status?.toLowerCase() === 'sent') {
             target.revenue += (i.total || 0);
           }
         });
@@ -127,14 +118,14 @@ const Dashboard = () => {
             <div className="text-[12px] text-[#95BF47] font-bold mt-1.5 flex items-center gap-1">↑ 8% from last month</div>
           </div>
           <div className="flex-1 p-5 px-6">
-            <div className="kpi-label">Pending Amount</div>
-            <div className="kpi-value">{formatCurrency(stats.pendingAmount)}</div>
-            <div className="text-[12px] text-[#CC3A3A] font-bold mt-1.5 flex items-center gap-1">↓ 5% from last month</div>
+            <div className="kpi-label">Draft Invoices</div>
+            <div className="kpi-value">{stats.draftCount}</div>
+            <div className="text-[12px] text-[#D97706] font-bold mt-1.5 flex items-center gap-1">Pending submission</div>
           </div>
           <div className="flex-1 p-5 px-6">
-            <div className="kpi-label">Overdue Amount</div>
-            <div className="kpi-value">{formatCurrency(stats.overdueAmount)}</div>
-            <div className="text-[12px] text-[#CC3A3A] font-bold mt-1.5">Needs immediate attention</div>
+            <div className="kpi-label">Submitted Invoices</div>
+            <div className="kpi-value">{stats.submittedCount}</div>
+            <div className="text-[12px] text-[#95BF47] font-bold mt-1.5">Successfully submitted</div>
           </div>
         </div>
 
@@ -224,12 +215,11 @@ const Dashboard = () => {
                         <td className="px-6 py-4 text-[14px] font-bold text-right text-[#0C0E10]">{formatCurrency(inv.total, inv.currency)}</td>
                         <td className="px-6 py-4">
                           <span className={`status-badge ${
-                            inv.status?.toLowerCase() === 'paid' ? 'status-paid' :
-                            inv.status?.toLowerCase() === 'sent' ? 'status-sent' :
-                            inv.status?.toLowerCase() === 'overdue' ? 'status-overdue' :
+                            inv.status?.toLowerCase() === 'sent'  ? 'status-sent' :
+                            inv.status?.toLowerCase() === 'draft' ? 'status-draft' :
                             'status-pending'
                           }`}>
-                            {inv.status || 'Pending'}
+                            {inv.status?.toLowerCase() === 'sent' ? 'Submitted' : (inv.status || 'Draft')}
                           </span>
                         </td>
                       </tr>
@@ -276,43 +266,26 @@ const Dashboard = () => {
                 </Link>
               </div>
 
-              {/* INVOICE STATUS DONUT EQUIVALENT */}
               <div className="mt-10 pt-8 border-t border-[#E4E4E0]">
                 <h3 className="text-[18px] font-bold text-[#0C0E10] font-heading mb-6">Invoice Status</h3>
                 <div className="h-2 w-full rounded-full bg-[#E4E4E0] overflow-hidden flex">
-                  <div style={{ width: `${(stats.paidCount / (stats.totalCount || 1)) * 100}%` }} className="bg-[#95BF47] h-full transition-all duration-1000"></div>
-                  <div style={{ width: `${(stats.sentCount / (stats.totalCount || 1)) * 100}%` }} className="bg-[#02172E] h-full transition-all duration-1000"></div>
-                  <div style={{ width: `${(stats.pendingCount / (stats.totalCount || 1)) * 100}%` }} className="bg-[#D97706] h-full transition-all duration-1000"></div>
-                  <div style={{ width: `${(stats.overdueCount / (stats.totalCount || 1)) * 100}%` }} className="bg-[#CC3A3A] h-full transition-all duration-1000"></div>
+                  <div style={{ width: `${(stats.draftCount / (stats.totalCount || 1)) * 100}%` }} className="bg-[#D97706] h-full transition-all duration-1000"></div>
+                  <div style={{ width: `${(stats.submittedCount / (stats.totalCount || 1)) * 100}%` }} className="bg-[#95BF47] h-full transition-all duration-1000"></div>
                 </div>
                 <div className="mt-6 space-y-3">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-2 h-2 rounded-[2px] bg-[#95BF47]"></div>
-                      <span className="text-[12px] text-[#6B7280] font-medium">Paid</span>
-                    </div>
-                    <span className="text-[12px] font-bold text-[#0C0E10]">{stats.paidCount}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-2 h-2 rounded-[2px] bg-[#02172E]"></div>
-                      <span className="text-[12px] text-[#6B7280] font-medium">Sent</span>
-                    </div>
-                    <span className="text-[12px] font-bold text-[#0C0E10]">{stats.sentCount}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2.5">
                       <div className="w-2 h-2 rounded-[2px] bg-[#D97706]"></div>
-                      <span className="text-[12px] text-[#6B7280] font-medium">Pending</span>
+                      <span className="text-[12px] text-[#6B7280] font-medium">Draft</span>
                     </div>
-                    <span className="text-[12px] font-bold text-[#0C0E10]">{stats.pendingCount}</span>
+                    <span className="text-[12px] font-bold text-[#0C0E10]">{stats.draftCount}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-2 h-2 rounded-[2px] bg-[#CC3A3A]"></div>
-                      <span className="text-[12px] text-[#6B7280] font-medium">Overdue</span>
+                      <div className="w-2 h-2 rounded-[2px] bg-[#95BF47]"></div>
+                      <span className="text-[12px] text-[#6B7280] font-medium">Submitted</span>
                     </div>
-                    <span className="text-[12px] font-bold text-[#0C0E10]">{stats.overdueCount}</span>
+                    <span className="text-[12px] font-bold text-[#0C0E10]">{stats.submittedCount}</span>
                   </div>
                 </div>
               </div>

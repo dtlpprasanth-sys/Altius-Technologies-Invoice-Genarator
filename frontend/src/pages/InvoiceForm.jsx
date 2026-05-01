@@ -87,7 +87,7 @@ const InvoiceForm = () => {
   }, [form.items, form.totals, form.settings]);
 
   const live = calculate();
-  const isSubmitted = invoiceStatus === 'sent' || invoiceStatus === 'paid' || invoiceStatus === 'cancelled';
+  const isSubmitted = invoiceStatus === 'sent';
 
   useEffect(() => {
     const init = async () => {
@@ -958,7 +958,7 @@ const InvoiceForm = () => {
             </button>
             <button 
               onClick={() => handleSave('sent')}
-              className="h-10 px-5 bg-[#CC3A3A] text-white rounded-[5px] text-[13px] font-bold hover:bg-[#B32D2D] transition-all"
+              className="h-10 px-5 bg-[#0C0E10] text-white rounded-[5px] text-[13px] font-bold hover:bg-[#02172E] transition-all"
             >
               Submit Invoice
             </button>

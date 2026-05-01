@@ -49,14 +49,14 @@ const InvoiceDetail = () => {
   };
 
   const statusBadge = (s) => {
-    const map = { 
-      draft: 'bg-slate-100 text-slate-600',
-      sent: 'bg-blue-100 text-blue-600',
-      paid: 'bg-emerald-100 text-emerald-600',
-      overdue: 'bg-rose-100 text-rose-600',
-      cancelled: 'bg-slate-200 text-slate-400'
-    };
-    return <span className={`${map[s] || 'bg-slate-100 text-slate-600'} text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full`}>{s}</span>;
+    const st = s?.toLowerCase();
+    if (st === 'sent') {
+      return <span className="bg-[#F3F8E8] text-[#95BF47] text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-[#95BF47]/30">Submitted</span>;
+    }
+    if (st === 'draft') {
+      return <span className="bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-slate-200">Draft</span>;
+    }
+    return <span className="bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-slate-200">{s || 'Draft'}</span>;
   };
 
   if (loading) return <div className="flex items-center justify-center h-screen"><div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"/></div>;

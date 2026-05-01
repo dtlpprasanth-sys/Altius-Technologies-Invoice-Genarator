@@ -31,7 +31,7 @@ const Register = () => {
         <div className="hidden lg:flex w-[42%] bg-[#02172E] flex-col p-8 relative overflow-hidden">
           <div className="flex items-center gap-2 mb-3">
             <Zap className="text-[#95BF47]" size={20} />
-            <span className="text-[11px] font-bold text-white tracking-[3px] uppercase">InvoiceFlow</span>
+            <span className="text-[11px] font-bold text-white tracking-[3px] uppercase">Nxt Invoice</span>
           </div>
           <div className="w-10 h-[2px] bg-[#95BF47] mb-12"></div>
           
@@ -65,7 +65,7 @@ const Register = () => {
             <div className="w-full max-w-[400px]">
               <Zap className="text-[#95BF47] mx-auto mb-4" size={28} />
               <h2 className="text-[30px] font-bold text-[#0C0E10] text-center font-serif">Get Started Free.</h2>
-              <p className="text-[14px] text-[#6B7280] text-center mt-1 mb-10">Create your InvoiceFlow account</p>
+              <p className="text-[14px] text-[#6B7280] text-center mt-1 mb-10">Create your Nxt Invoice account</p>
 
               <form onSubmit={handleSubmit}>
                 <div className="mb-5">

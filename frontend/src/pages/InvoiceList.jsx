@@ -9,7 +9,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
-const STATUSES = ['all', 'draft', 'sent', 'paid', 'overdue', 'cancelled'];
+const STATUSES = [
+  { key: 'all',   label: 'All' },
+  { key: 'draft', label: 'Draft' },
+  { key: 'sent',  label: 'Submitted' }
+];
 
 const InvoiceList = () => {
   const navigate = useNavigate();
@@ -59,13 +63,17 @@ const InvoiceList = () => {
   };
 
   const getStatusClass = (s) => {
-    const status = s?.toLowerCase();
-    if (status === 'paid') return 'status-paid';
-    if (status === 'sent') return 'status-sent';
-    if (status === 'overdue') return 'status-overdue';
-    if (status === 'draft') return 'status-draft';
-    if (status === 'cancelled') return 'status-cancelled';
+    const st = s?.toLowerCase();
+    if (st === 'draft') return 'status-draft';
+    if (st === 'sent')  return 'status-sent';  // Submitted
     return 'status-pending';
+  };
+
+  const getStatusLabel = (s) => {
+    const st = s?.toLowerCase();
+    if (st === 'sent') return 'Submitted';
+    if (st === 'draft') return 'Draft';
+    return s || 'Draft';
   };
 
   return (
@@ -91,15 +99,15 @@ const InvoiceList = () => {
           <div className="flex items-center gap-0 h-full">
             {STATUSES.map(s => (
               <button 
-                key={s} 
-                onClick={() => setStatus(s)}
+                key={s.key} 
+                onClick={() => setStatus(s.key)}
                 className={`h-[52px] px-4 text-[13px] font-medium transition-all border-b-2 whitespace-nowrap ${
-                  status === s 
+                  status === s.key 
                     ? 'text-[#0C0E10] font-bold border-[#95BF47]' 
                     : 'text-[#6B7280] border-transparent hover:text-[#0C0E10]'
                 }`}
               >
-                {s.charAt(0).toUpperCase() + s.slice(1)}
+                {s.label}
               </button>
             ))}
           </div>
@@ -128,11 +136,11 @@ const InvoiceList = () => {
                 <FileText size={32} className="text-[#6B7280]" />
               </div>
               
-              {status === 'all' && search === '' ? (
+              {search === '' ? (
                 <>
                   <h3 className="text-[22px] font-bold text-[#0C0E10] font-heading mb-2">No invoices found</h3>
                   <p className="text-[14px] text-[#6B7280] max-w-sm mb-8 leading-relaxed">
-                    Get started by creating your first professional invoice in minutes.
+                    {status === 'all' ? 'No invoices yet.' : `No ${status === 'sent' ? 'Submitted' : 'Draft'} invoices yet.`} Create your first invoice to get started.
                   </p>
                   <Link to="/invoices/new" className="btn-navy h-11 px-8 rounded-[5px] text-sm flex items-center gap-2">
                     <Plus size={18} strokeWidth={3} /> Create your first invoice
@@ -142,7 +150,7 @@ const InvoiceList = () => {
                 <>
                   <h3 className="text-[22px] font-bold text-[#0C0E10] font-heading mb-2">No results matching filters</h3>
                   <p className="text-[14px] text-[#6B7280] max-w-sm mb-8 leading-relaxed">
-                    We couldn't find any {status !== 'all' ? status : ''} invoices {search ? `matching "${search}"` : ''}.
+                    We couldn't find any {status === 'all' ? '' : (status === 'sent' ? 'Submitted ' : 'Draft ')}invoices matching "{search}".
                   </p>
                   <button 
                     onClick={() => { setStatus('all'); setSearch(''); }}
@@ -183,7 +191,7 @@ const InvoiceList = () => {
                       <td className="px-6 py-4 text-[14px] font-bold text-[#0C0E10] text-right">{formatCurrency(inv.total, inv.currency)}</td>
                       <td className="px-6 py-4">
                         <span className={`status-badge ${getStatusClass(inv.status)}`}>
-                          {inv.status || 'Draft'}
+                          {getStatusLabel(inv.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4" onClick={e => e.stopPropagation()}>

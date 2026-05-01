@@ -32,7 +32,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Logo Area */}
       <div className="sidebar-logo">
         <Zap className="bolt" size={18} fill="currentColor" />
-        <span className="sidebar-logo-text">InvoiceFlow</span>
+        <span className="sidebar-logo-text">Nxt Invoice</span>
       </div>
       <div className="sidebar-accent"></div>
 

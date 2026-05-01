@@ -9,6 +9,9 @@ const getInvoices = async (req, res) => {
 
     if (status && status !== 'all') {
       where.status = status;
+    } else {
+      // Only show Draft and Submitted (sent) by default
+      where.status = { [Op.in]: ['draft', 'sent'] };
     }
 
     if (search) {
@@ -341,14 +344,18 @@ const generateInvoiceHTML = (invoice) => {
           <tr style="font-size: 9.5pt;">
             <td class="b-r b-b" style="padding: 10px 10px; vertical-align: top;">
               <div style="font-weight: 700; font-size: 9pt; color: #444; margin-bottom: 8px;">Invoice Details</div>
-              <div style="margin-bottom: 6px; font-size: 8pt;">
-                <span style="color: #6b7280;">Invoice No #  </span>
-                <span style="font-weight: 700;">${invoice.invoiceNumber}</span>
-              </div>
-              <div style="font-size: 8pt;">
-                <span style="color: #6b7280;">Invoice Date  </span>
-                <span style="font-weight: 700;">${formatDate(invoice.invoiceDate)}</span>
-              </div>
+              <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+                <tbody>
+                  <tr>
+                    <td style="font-weight: 700; padding-bottom: 6px; width: 95px; color: #000; white-space: nowrap;">Invoice No #</td>
+                    <td style="padding-bottom: 6px; font-weight: 400; color: #000; white-space: nowrap;">${invoice.invoiceNumber}</td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight: 700; color: #000; white-space: nowrap;">Invoice Date</td>
+                    <td style="font-weight: 400; color: #000; white-space: nowrap;">${formatDate(invoice.invoiceDate)}</td>
+                  </tr>
+                </tbody>
+              </table>
             </td>
             <td class="b-r b-b" style="padding: 10px 10px; vertical-align: top;">
               <div style="font-weight: 700; font-size: 9pt; color: #444; margin-bottom: 8px;">Billed By</div>
@@ -356,13 +363,13 @@ const generateInvoiceHTML = (invoice) => {
               ${billedByLines.map(l => `<div style="font-size: 8.5pt; line-height: 1.4;">${l}</div>`).join('')}
               ${(invoice.businessGstin || biz.gstin) ? `
               <div style="margin-top: 5px; font-size: 8.5pt;">
-                <span style="color: #6b7280;">GSTIN: </span>
-                <span>${invoice.businessGstin || biz.gstin}</span>
+                <span style="font-weight: 700; color: #000; margin-right: 4px;">GSTIN:</span>
+                <span style="color: #000;">${invoice.businessGstin || biz.gstin}</span>
               </div>` : ''}
               ${biz.satelliteStation ? `
               <div style="margin-top: 3px; font-size: 8.5pt;">
-                <span style="color: #6b7280;">Satellite Station: </span>
-                <span>${biz.satelliteStation}</span>
+                <span style="font-weight: 700; color: #000; margin-right: 4px;">Satellite Station:</span>
+                <span style="color: #000;">${biz.satelliteStation}</span>
               </div>` : ''}
             </td>
             <td class="b-b" style="padding: 10px 10px; vertical-align: top;">
@@ -370,10 +377,10 @@ const generateInvoiceHTML = (invoice) => {
               <div style="font-weight: 700; font-size: 10pt; margin-bottom: 4px;">${invoice.clientName || clnt.name}</div>
               ${billedToLines.map(l => `<div style="font-size: 8.5pt; line-height: 1.4;">${l}</div>`).join('')}
               <div style="margin-top: 6px; font-size: 8.5pt; line-height: 1.6;">
-                <div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="color: #6b7280; font-weight: 400; margin-right: 4px;">Export Currency:</span><span style="font-weight: 700; color: #000;">${currency}</span></div>
-                <div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="color: #6b7280; font-weight: 400; margin-right: 4px;">Conversion Rate:</span><span style="font-weight: 700; color: #000;">${fmt(invoice.exchangeRate)} INR</span></div>
-                ${poNoAndDate ? `<div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="color: #6b7280; font-weight: 400; margin-right: 4px;">Purchase Order No &amp; Date:</span><span style="font-weight: 700; color: #000;">${poNoAndDate}</span></div>` : ''}
-                ${softwareExportType ? `<div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="color: #6b7280; font-weight: 400; margin-right: 4px;">Type of Software Export:</span><span style="font-weight: 700; color: #000;">${softwareExportType}</span></div>` : ''}
+                <div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="font-weight: 700; color: #000; margin-right: 4px;">Export Currency:</span><span style="font-weight: 400; color: #000;">${currency}</span></div>
+                <div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="font-weight: 700; color: #000; margin-right: 4px;">Conversion Rate:</span><span style="font-weight: 400; color: #000;">${fmt(invoice.exchangeRate)} INR</span></div>
+                ${poNoAndDate ? `<div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="font-weight: 700; color: #000; margin-right: 4px;">Purchase Order No &amp; Date:</span><span style="font-weight: 400; color: #000;">${poNoAndDate}</span></div>` : ''}
+                ${softwareExportType ? `<div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="font-weight: 700; color: #000; margin-right: 4px;">Type of Software Export:</span><span style="font-weight: 400; color: #000;">${softwareExportType}</span></div>` : ''}
               </div>
             </td>
           </tr>
