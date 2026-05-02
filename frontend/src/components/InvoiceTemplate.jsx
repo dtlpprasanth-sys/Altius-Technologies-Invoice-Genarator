@@ -153,18 +153,18 @@ const InvoiceTemplate = ({ data, settings }) => {
       <div className="flex border-x border-b border-black mb-5 bg-white">
         <div className="flex-1"></div>
         <div className="w-[300px] border-l border-black">
-          <div className="flex border-b border-black font-bold text-[10pt]">
-            <div className="flex-1 p-2 text-right border-r border-black bg-gray-50 uppercase text-[9pt] text-gray-400 font-normal">Bank Charges</div>
-            <div className="w-[100px] p-2 text-right text-black font-bold">{currencySymbol}{Number(data.totals?.bankCharges || 0).toFixed(2)}</div>
+          <div className="flex border-b border-black text-[10pt]">
+            <div className="flex-1 p-2 text-right border-r border-black bg-gray-50 uppercase text-[9pt] text-black font-bold">Bank Charges</div>
+            <div className="w-[100px] p-2 text-right text-black font-normal">{currencySymbol}{Number(data.totals?.bankCharges || 0).toFixed(2)}</div>
           </div>
-          <div className="flex border-b border-black font-bold text-[11pt]">
-            <div className="flex-1 p-2 text-right border-r border-black bg-gray-50 uppercase text-[9pt] text-gray-400 font-normal">Total ({currency})</div>
-            <div className="w-[100px] p-2 text-right font-bold text-black">{currencySymbol}{Number(data.total || 0).toFixed(2)}</div>
+          <div className="flex border-b border-black text-[11pt]">
+            <div className="flex-1 p-2 text-right border-r border-black bg-gray-50 uppercase text-[9pt] text-black font-bold">Total ({currency})</div>
+            <div className="w-[100px] p-2 text-right font-normal text-black">{currencySymbol}{Number(data.total || 0).toFixed(2)}</div>
           </div>
           {currency !== 'INR' && (
-            <div className="flex font-bold text-[10pt]">
-              <div className="flex-1 p-2 text-right border-r border-black bg-gray-50 uppercase text-[9pt] text-gray-400 font-normal">Total Amount in (INR)</div>
-              <div className="w-[100px] p-2 text-right font-bold text-black">₹{Number(data.totalInINR || 0).toFixed(2)}</div>
+            <div className="flex text-[10pt]">
+              <div className="flex-1 p-2 text-right border-r border-black bg-gray-50 uppercase text-[9pt] text-black font-bold">Total Amount in (INR)</div>
+              <div className="w-[100px] p-2 text-right font-normal text-black">₹{Number(data.totalInINR || 0).toFixed(2)}</div>
             </div>
           )}
         </div>
@@ -195,8 +195,8 @@ const InvoiceTemplate = ({ data, settings }) => {
               { label: 'BANK', value: settings.bankName }
             ].map((item, i) => item.value ? (
               <div key={i} className="grid grid-cols-[120px_1fr] items-start gap-1">
-                <span className="text-[9pt] font-normal text-gray-500 uppercase">{item.label}</span>
-                <span className="font-bold text-black text-[10pt] leading-tight text-left">{item.value}</span>
+                <span className="text-[9pt] font-bold text-black uppercase">{item.label}</span>
+                <span className="font-normal text-black text-[10pt] leading-tight text-left">{item.value}</span>
               </div>
             ) : null)}
           </div>

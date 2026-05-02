@@ -273,9 +273,9 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
                   {/* Single merged empty cell cols 1-4 — NO internal vertical lines (matches reference) */}
                   <td colSpan={4} style={{ borderBottom:B, borderRight:B }} />
                   {/* Label spans UOM+Rate cols (11%+12%=23%) */}
-                  <td colSpan={2} style={{ borderBottom:B, borderRight:B, padding:'6px 8px', textAlign:'right', color:'#333', fontWeight:400, fontSize:'8.5pt', whiteSpace:'nowrap' }}>{r.label}</td>
+                  <td colSpan={2} style={{ borderBottom:B, borderRight:B, padding:'6px 8px', textAlign:'right', color:'#000', fontWeight:700, fontSize:'8.5pt', whiteSpace:'nowrap' }}>{r.label}</td>
                   {/* Value in Amount col */}
-                  <td style={{ borderBottom:B, padding:'6px 8px', textAlign:'right', fontWeight: i === totalsRows.length - 1 ? 700 : 400, fontSize:'9.5pt', whiteSpace:'nowrap' }}>{r.v}</td>
+                  <td style={{ borderBottom:B, padding:'6px 8px', textAlign:'right', fontWeight:400, color:'#000', fontSize:'9.5pt', whiteSpace:'nowrap' }}>{r.v}</td>
                 </tr>
               ))}
             </tbody>
@@ -337,8 +337,8 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
                       { label:'Bank',           val: settings.bankName },
                     ].filter(r => r.val).map((r,i) => (
                       <tr key={i}>
-                        <td style={{ padding:'4px 0', color:'#6b7280', fontWeight:400, width:130, verticalAlign:'top' }}>{r.label}</td>
-                        <td style={{ padding:'4px 0', fontWeight:700, color:'#000', verticalAlign:'top' }}>{r.val}</td>
+                        <td style={{ padding:'4px 0', color:'#000', fontWeight:700, width:130, verticalAlign:'top', textTransform:'uppercase' }}>{r.label}</td>
+                        <td style={{ padding:'4px 0', fontWeight:400, color:'#000', verticalAlign:'top' }}>{r.val}</td>
                       </tr>
                     ))}
                   </tbody>

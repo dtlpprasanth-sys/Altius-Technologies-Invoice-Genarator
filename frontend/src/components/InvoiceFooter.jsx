@@ -35,8 +35,8 @@ const InvoiceFooter = ({ settings }) => {
       textAlign: 'center',
       whiteSpace: 'nowrap',
     },
-    label: { color: '#374151', fontWeight: 400 },
-    value: { fontWeight: 700, color: '#000' },
+    label: { color: '#000', fontWeight: 700 },
+    value: { fontWeight: 400, color: '#000' },
   };
 
   return (
@@ -70,7 +70,7 @@ const InvoiceFooter = ({ settings }) => {
           <span style={st.label}>Email :</span>
           <span style={st.value}>{settings.email}</span>
         </div>
-        <div style={{ ...st.cell, fontWeight: 700 }}>
+        <div style={{ ...st.cell, fontWeight: 400, color: '#000' }}>
           {settings.website}
         </div>
         <div style={st.cell}>
