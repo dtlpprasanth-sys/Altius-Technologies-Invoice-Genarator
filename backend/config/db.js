@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { Sequelize } = require('sequelize');
 
 // Create Sequelize instance using direct IP for Windows stability
@@ -6,7 +7,7 @@ const sequelize = new Sequelize(
   process.env.DB_USER || 'postgres',
   process.env.DB_PASSWORD || 'root',
   {
-    host: '127.0.0.1', // Using IP instead of 'localhost' fixes many Windows auth issues
+    host: process.env.DB_HOST || '127.0.0.1', 
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
     logging: console.log,
