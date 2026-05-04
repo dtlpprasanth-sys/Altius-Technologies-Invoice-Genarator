@@ -55,6 +55,15 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
       {/* Sidebar Bottom */}
       <div className="sidebar-bottom">
+        <div 
+          className="nav-item text-red-400 hover:text-red-300 hover:bg-red-400/10 mb-4 cursor-pointer transition-colors"
+          onClick={logout}
+          onMouseEnter={() => !isOpen && setHoveredItem({ label: 'Log out' })}
+        >
+          <LogOut className="nav-icon" size={18} />
+          <span className="nav-label">Log out</span>
+        </div>
+
         <div className="sidebar-user mb-2">
           <div className="user-avatar bg-[#95BF47] text-white">
             {user?.name?.charAt(0)?.toUpperCase() || 'P'}
