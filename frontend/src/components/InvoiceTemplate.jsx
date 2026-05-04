@@ -11,7 +11,9 @@ const InvoiceTemplate = ({ data, settings }) => {
   
   // Format conversion rate to exactly 2 decimal places
   const exchangeRate = Number(data.totals?.exchangeRate || data.exchangeRate || 1);
-  const displayExchangeRate = exchangeRate.toFixed(2);
+  const numLocale = data.settings?.numberFormat || settings?.numberFormat || 'en-US';
+  const fmt = (n) => Number(n || 0).toLocaleString(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const displayExchangeRate = exchangeRate.toLocaleString(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // Format Date to DD-MMM-YYYY
   const displayDate = formatDate(data.header?.invoiceDate || data.invoiceDate);
@@ -72,8 +74,8 @@ const InvoiceTemplate = ({ data, settings }) => {
         <div className="border-r border-black flex flex-col">
           <div className="p-2 border-b border-black font-bold text-[11pt] bg-gray-50">Invoice Details</div>
           <div className="p-3 space-y-4 text-[10pt] flex-1">
-            <div className="flex"><span className="text-gray-500 text-[9pt] w-28 shrink-0">INVOICE NO #</span><span className="font-bold text-black">{data.header?.invoiceNumber || data.invoiceNumber}</span></div>
-            <div className="flex"><span className="text-gray-500 text-[9pt] w-28 shrink-0">INVOICE DATE</span><span className="font-bold text-black">{displayDate}</span></div>
+            <div className="flex"><span className="font-bold text-black text-[9pt] w-[110px] shrink-0 uppercase">Invoice No #</span><span className="font-normal text-black">{data.header?.invoiceNumber || data.invoiceNumber}</span></div>
+            <div className="flex"><span className="font-bold text-black text-[9pt] w-[110px] shrink-0 uppercase">Invoice Date</span><span className="font-normal text-black">{displayDate}</span></div>
           </div>
         </div>
 
@@ -136,8 +138,8 @@ const InvoiceTemplate = ({ data, settings }) => {
                 <td className="border-r border-black p-2.5 text-center align-top text-gray-600">{item.hsn}</td>
                 <td className="border-r border-black p-2.5 text-right align-top font-bold text-black">{item.quantity}</td>
                 <td className="border-r border-black p-2.5 text-center align-top text-gray-600">{item.unit || 'per SKU'}</td>
-                <td className="border-r border-black p-2.5 text-right align-top text-black">{Number(item.rate || 0).toFixed(2)}</td>
-                <td className="p-2.5 text-right align-top font-bold text-black">{Number(item.amount || 0).toFixed(2)}</td>
+                <td className="border-r border-black p-2.5 text-right align-top text-black">{fmt(item.rate || 0)}</td>
+                <td className="p-2.5 text-right align-top font-bold text-black">{fmt(item.amount || 0)}</td>
               </tr>
             ))}
             {[...Array(Math.max(0, 5 - items.length))].map((_, i) => (

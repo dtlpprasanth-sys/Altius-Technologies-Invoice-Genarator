@@ -49,12 +49,15 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
   const totals   = data.totals  || {};
   const terms    = data.terms   || totals.terms || [];
 
+  const symbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ' };
   const currency    = data.currency    || header.currency    || 'USD';
-  const sym         = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency + ' ';
-  const exRate      = data.exchangeRate || header.exchangeRate || settings.exchangeRate || '0';
-  const bankCharges = Number(data.bankCharges  || totals.bankCharges  || 0).toFixed(2);
-  const totalFor    = Number(data.total        || 0).toFixed(2);
-  const totalINR    = Number(data.totalInINR   || 0).toFixed(2);
+  const sym         = symbols[currency] || currency + ' ';
+  const numLocale = data.settings?.numberFormat || settings?.numberFormat || 'en-US';
+  const fmt = (n) => Number(n || 0).toLocaleString(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const exRate      = Number(data.totals?.exchangeRate || data.exchangeRate || settings.exchangeRate || 0).toLocaleString(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const bankCharges = fmt(data.bankCharges  || totals.bankCharges  || 0);
+  const totalFor    = fmt(data.total        || 0);
+  const totalINR    = fmt(data.totalInINR   || 0);
 
   const rawWords    = numberToWords(data.total, currency);
   const inWords     = toTitleCase(rawWords.replace(/\s+only\s*$/i, ''));
@@ -147,8 +150,8 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
           {/* 1. Top Blank Row — divider at 62% */}
           <table style={{ width:'100%', borderCollapse:'collapse', tableLayout:'fixed' }}>
             <colgroup>
-              <col style={{ width:'62%' }} />
-              <col style={{ width:'38%' }} />
+              <col style={{ width:'66%' }} />
+              <col style={{ width:'34%' }} />
             </colgroup>
             <tbody>
               <tr style={{ height:25 }}>
@@ -161,9 +164,9 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
           {/* 2. Info Grid — 27% / 35% / 38% */}
           <table style={{ width:'100%', borderCollapse:'collapse', tableLayout:'fixed' }}>
             <colgroup>
-              <col style={{ width:'27%' }} />
-              <col style={{ width:'35%' }} />
-              <col style={{ width:'38%' }} />
+              <col style={{ width:'32%' }} />
+              <col style={{ width:'34%' }} />
+              <col style={{ width:'34%' }} />
             </colgroup>
             <tbody>
               <tr style={{ fontSize:'9.5pt' }}>
@@ -173,11 +176,11 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5pt' }}>
                     <tbody>
                       <tr>
-                        <td style={{ fontWeight: 700, paddingBottom: 6, width: 95, color: '#000', whiteSpace: 'nowrap' }}>Invoice No #</td>
+                        <td style={{ fontWeight: 700, paddingBottom: 6, width: 110, color: '#000', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>Invoice No #</td>
                         <td style={{ paddingBottom: 6, fontWeight: 400, color: '#000', whiteSpace: 'nowrap' }}>{invoiceNo}</td>
                       </tr>
                       <tr>
-                        <td style={{ fontWeight: 700, color: '#000', whiteSpace: 'nowrap' }}>Invoice Date</td>
+                        <td style={{ fontWeight: 700, color: '#000', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>Invoice Date</td>
                         <td style={{ fontWeight: 400, color: '#000', whiteSpace: 'nowrap' }}>{invoiceDate}</td>
                       </tr>
                     </tbody>

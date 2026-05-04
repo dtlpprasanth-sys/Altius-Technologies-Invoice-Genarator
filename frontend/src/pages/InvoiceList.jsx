@@ -8,6 +8,7 @@ import {
   Send, FileEdit, Trash
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const STATUSES = [
   { key: 'all',   label: 'All' },
@@ -25,6 +26,7 @@ const InvoiceList = () => {
   const [search, setSearch] = useState(initialSearch);
   const [status, setStatus] = useState('all');
   const [downloading, setDownloading] = useState(null);
+  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null, num: '' });
 
   const fetchInvoices = async () => {
     setLoading(true);
@@ -37,11 +39,14 @@ const InvoiceList = () => {
 
   useEffect(() => { fetchInvoices(); }, [search, status]);
 
-  const handleDelete = async (id, num, e) => {
+  const handleDelete = (id, num, e) => {
     e.stopPropagation();
-    if (!window.confirm(`Delete invoice ${num}?`)) return;
+    setDeleteDialog({ isOpen: true, id, num });
+  };
+
+  const confirmDelete = async () => {
     try {
-      await invoiceApi.delete(id);
+      await invoiceApi.delete(deleteDialog.id);
       toast.success('Invoice deleted');
       fetchInvoices();
     } catch { toast.error('Delete failed'); }
@@ -210,6 +215,15 @@ const InvoiceList = () => {
         </div>
 
       </div>
+
+      <ConfirmDialog 
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ ...deleteDialog, isOpen: false })}
+        onConfirm={confirmDelete}
+        title="Delete Invoice"
+        message={`Are you sure you want to delete invoice ${deleteDialog.num}? This action cannot be undone.`}
+        confirmText="Delete Invoice"
+      />
     </div>
   );
 };

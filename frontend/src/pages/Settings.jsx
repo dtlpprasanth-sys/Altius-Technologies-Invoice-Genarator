@@ -209,6 +209,7 @@ const Settings = () => {
                   <DataField label="PAN Number" value={settings.pan} field="pan" isEditing={isEditing} settings={settings} setSettings={setSettings} />
                   <DataField label="IE Code" value={settings.ieCode} field="ieCode" isEditing={isEditing} settings={settings} setSettings={setSettings} />
                   <DataField label="CIN Number" value={settings.cin} field="cin" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="Satellite Station" value={settings.satelliteStation} field="satelliteStation" isEditing={isEditing} settings={settings} setSettings={setSettings} />
                   <DataField label="LUT Details" value={settings.lutDetails} field="lutDetails" type="textarea" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
                 </div>
               </div>

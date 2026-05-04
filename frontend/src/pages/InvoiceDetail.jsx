@@ -4,6 +4,7 @@ import { invoiceApi, settingsApi } from '../services/api';
 import { ArrowLeft, Edit, Download, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import ExportInvoicePDF from '../components/ExportInvoicePDF';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const InvoiceDetail = () => {
   const { id } = useParams();
@@ -12,6 +13,7 @@ const InvoiceDetail = () => {
   const [loading, setLoading] = useState(true);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [settings, setSettings] = useState({});
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const invoiceRef = useRef();
 
   useEffect(() => {
@@ -24,8 +26,9 @@ const InvoiceDetail = () => {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleDelete = async () => {
-    if (!window.confirm('Delete this invoice?')) return;
+  const handleDelete = () => setIsDeleteOpen(true);
+
+  const confirmDelete = async () => {
     try {
       await invoiceApi.delete(id);
       toast.success('Deleted successfully');
@@ -94,6 +97,15 @@ const InvoiceDetail = () => {
           <ExportInvoicePDF data={invoice} settings={settings} />
         </div>
       </div>
+
+      <ConfirmDialog 
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Invoice"
+        message={`Are you sure you want to delete invoice ${invoice.invoiceNumber}? This action is irreversible and will remove all billing data.`}
+        confirmText="Confirm Delete"
+      />
     </div>
   );
 };

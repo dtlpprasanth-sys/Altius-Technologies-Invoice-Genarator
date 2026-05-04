@@ -112,12 +112,14 @@ const getNextInvoiceNumber = async (req, res) => {
 const downloadInvoicePDF = async (req, res) => {
   let browser;
   try {
-    const invoice = await Invoice.findOne({
-      where: { id: req.params.id, userId: req.user.id }
-    });
+    const [invoice, settings] = await Promise.all([
+      Invoice.findOne({ where: { id: req.params.id, userId: req.user.id } }),
+      Settings.findOne({ where: { userId: req.user.id } })
+    ]);
+
     if (!invoice) return res.status(404).send('Invoice not found');
 
-    const html = generateInvoiceHTML(invoice);
+    const html = generateInvoiceHTML(invoice, settings);
     browser = await puppeteer.launch({
       headless: "new",
       args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -193,15 +195,19 @@ const numberToWords = (num, currency = 'INR') => {
   return result + ' ONLY';
 };
 
-const generateInvoiceHTML = (invoice) => {
-  const biz = invoice.business || invoice.businessDetails || {};
+const generateInvoiceHTML = (invoice, settings = {}) => {
+  const snapshot = invoice.business || invoice.businessDetails || {};
+  // Use settings from profile as the base, then override with any snapshot data if it exists
+  const biz = { ...settings?.dataValues, ...snapshot };
   const clnt = invoice.client || invoice.clientDetails || {};
   const items = invoice.items || [];
   const terms = invoice.terms || [];
 
   const currency = invoice.currency || 'USD';
-  const sym = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency + ' ';
-  const fmt = (n) => Number(n || 0).toFixed(2);
+  const symbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ' };
+  const sym = symbols[currency] || currency + ' ';
+  const numLocale = biz.numberFormat || 'en-US';
+  const fmt = (n) => Number(n || 0).toLocaleString(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const formatDate = (d) => {
     if (!d) return '-';
     const date = new Date(d);
@@ -329,7 +335,7 @@ const generateInvoiceHTML = (invoice) => {
     <!-- Outer Content Box -->
     <div class="b-all">
       <table>
-        <colgroup><col style="width: 62%;"><col style="width: 38%;"></colgroup>
+        <colgroup><col style="width: 66%;"><col style="width: 34%;"></colgroup>
         <tbody>
           <tr style="height: 25px;">
             <td class="b-b b-r"></td>
@@ -339,7 +345,7 @@ const generateInvoiceHTML = (invoice) => {
       </table>
 
       <table>
-        <colgroup><col style="width: 27%;"><col style="width: 35%;"><col style="width: 38%;"></colgroup>
+        <colgroup><col style="width: 32%;"><col style="width: 34%;"><col style="width: 34%;"></colgroup>
         <tbody>
           <tr style="font-size: 9.5pt;">
             <td class="b-r b-b" style="padding: 10px 10px; vertical-align: top;">
@@ -347,11 +353,11 @@ const generateInvoiceHTML = (invoice) => {
               <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
                 <tbody>
                   <tr>
-                    <td style="font-weight: 700; padding-bottom: 6px; width: 95px; color: #000; white-space: nowrap;">Invoice No #</td>
+                    <td style="font-weight: 700; padding-bottom: 6px; width: 110px; color: #000; white-space: nowrap; text-transform: uppercase;">Invoice No #</td>
                     <td style="padding-bottom: 6px; font-weight: 400; color: #000; white-space: nowrap;">${invoice.invoiceNumber}</td>
                   </tr>
                   <tr>
-                    <td style="font-weight: 700; color: #000; white-space: nowrap;">Invoice Date</td>
+                    <td style="font-weight: 700; color: #000; white-space: nowrap; text-transform: uppercase;">Invoice Date</td>
                     <td style="font-weight: 400; color: #000; white-space: nowrap;">${formatDate(invoice.invoiceDate)}</td>
                   </tr>
                 </tbody>
@@ -411,8 +417,8 @@ const generateInvoiceHTML = (invoice) => {
           ${totalsRows.map(r => `
             <tr>
               <td colspan="4" class="b-b b-r"></td>
-              <td colspan="2" class="b-b b-r" style="padding: 6px 8px; text-align: right; color: #333; font-weight: 400; font-size: 8.5pt; white-space: nowrap;">${r.label}</td>
-              <td class="b-b" style="padding: 6px 8px; text-align: right; font-weight: ${r.bold ? '700' : '400'}; font-size: 9.5pt; white-space: nowrap;">${r.v}</td>
+              <td colspan="2" class="b-b b-r" style="padding: 6px 8px; text-align: right; color: #000; font-weight: 700; font-size: 8.5pt; white-space: nowrap;">${r.label}</td>
+              <td class="b-b" style="padding: 6px 8px; text-align: right; font-weight: 400; font-size: 9.5pt; white-space: nowrap;">${r.v}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -457,8 +463,8 @@ const generateInvoiceHTML = (invoice) => {
               <tbody>
                 ${bankDetails.map(r => `
                   <tr>
-                    <td style="padding: 4px 0; color: #6b7280; font-weight: 400; width: 130px; vertical-align: top;">${r.label}</td>
-                    <td style="padding: 4px 0; font-weight: 700; color: #000; vertical-align: top;">${r.val}</td>
+                    <td style="padding: 4px 0; color: #000; font-weight: 700; width: 130px; vertical-align: top; text-transform: uppercase;">${r.label}</td>
+                    <td style="padding: 4px 0; font-weight: 400; color: #000; vertical-align: top;">${r.val}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -475,29 +481,29 @@ const generateInvoiceHTML = (invoice) => {
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9pt; margin-bottom: 2px;">
         <div style="text-align: center; white-space: nowrap;">
-          <span style="color: #374151; font-weight: 400;">PAN: </span>
-          <span style="font-weight: 700; color: #000;">${biz.pan || invoice.businessPan || ''}</span>
+          <span style="color: #000; font-weight: 700;">PAN: </span>
+          <span style="font-weight: 400; color: #000;">${biz.pan || invoice.businessPan || ''}</span>
         </div>
         <div style="text-align: center; white-space: nowrap;">
-          <span style="color: #374151; font-weight: 400;">IE Code : </span>
-          <span style="font-weight: 700; color: #000;">${biz.ieCode || invoice.ieCode || ''}</span>
+          <span style="color: #000; font-weight: 700;">IE Code : </span>
+          <span style="font-weight: 400; color: #000;">${biz.ieCode || invoice.ieCode || ''}</span>
         </div>
         <div style="text-align: center; white-space: nowrap;">
-          <span style="color: #374151; font-weight: 400;">CIN: </span>
-          <span style="font-weight: 700; color: #000;">${biz.cin || invoice.cin || ''}</span>
+          <span style="color: #000; font-weight: 700;">CIN: </span>
+          <span style="font-weight: 400; color: #000;">${biz.cin || invoice.cin || ''}</span>
         </div>
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9pt; margin-bottom: 2px;">
         <div style="text-align: center; white-space: nowrap;">
-          <span style="color: #374151; font-weight: 400;">Email :</span>
-          <span style="font-weight: 700; color: #000;">${biz.email || ''}</span>
+          <span style="color: #000; font-weight: 700;">Email :</span>
+          <span style="font-weight: 400; color: #000;">${biz.email || ''}</span>
         </div>
-        <div style="text-align: center; white-space: nowrap; font-weight: 700;">
+        <div style="text-align: center; white-space: nowrap; font-weight: 400; color: #000;">
           ${(biz.website || '').replace(/^https?:\/\//, '')}
         </div>
         <div style="text-align: center; white-space: nowrap;">
-          <span style="color: #374151; font-weight: 400;">Tel : </span>
-          <span style="font-weight: 700; color: #000;">${biz.telephone || invoice.telephone || biz.phone || invoice.phone || ''}</span>
+          <span style="color: #000; font-weight: 700;">Tel : </span>
+          <span style="font-weight: 400; color: #000;">${biz.telephone || invoice.telephone || biz.phone || invoice.phone || ''}</span>
         </div>
       </div>
     </div>

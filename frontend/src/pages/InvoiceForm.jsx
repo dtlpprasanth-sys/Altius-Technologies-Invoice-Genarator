@@ -64,7 +64,7 @@ const InvoiceForm = () => {
       bankCharges: 0,
       terms: [],
       exchangeRate: '0',
-      exportType: EXPORT_TYPES[0],
+      exportType: '',
       signature: ''
     },
     settings: {
@@ -147,7 +147,7 @@ const InvoiceForm = () => {
               bankCharges: data.bankCharges || 0,
               terms: data.terms || [],
               exchangeRate: data.exchangeRate || '0',
-              exportType: data.softwareExportType || EXPORT_TYPES[0],
+              exportType: data.softwareExportType || '',
               signature: data.signatureUrl || ''
             },
             settings: {
@@ -364,11 +364,12 @@ const InvoiceForm = () => {
                   <div className="relative">
                     <input 
                       type="date" 
-                      className="w-full h-10 border border-[#E4E4E0] rounded-[5px] px-3 pr-10 text-[14px] font-bold text-[#0C0E10] outline-none focus:border-[#95BF47]"
+                      className="w-full h-10 border border-[#E4E4E0] rounded-[5px] px-3 pr-10 text-[14px] font-bold text-[#0C0E10] outline-none focus:border-[#95BF47] disabled:bg-[#FAFAF8] disabled:cursor-default"
                       value={form.header.dueDate}
+                      disabled={isSubmitted}
                       onChange={e => setForm({...form, header: {...form.header, dueDate: e.target.value}})}
                     />
-                    {form.header.dueDate && (
+                    {form.header.dueDate && !isSubmitted && (
                       <button 
                         onClick={() => setForm({...form, header: {...form.header, dueDate: ''}})}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-[#CC3A3A]"
@@ -381,9 +382,10 @@ const InvoiceForm = () => {
                 <div className="flex flex-col">
                   <label className="text-[11px] font-bold text-[#6B7280] uppercase tracking-[1.5px] mb-1">PO No & Date</label>
                   <input 
-                    className="h-10 border border-[#E4E4E0] rounded-[5px] px-3 text-[14px] font-bold text-[#0C0E10] outline-none focus:border-[#95BF47]"
+                    className="h-10 border border-[#E4E4E0] rounded-[5px] px-3 text-[14px] font-bold text-[#0C0E10] outline-none focus:border-[#95BF47] disabled:bg-[#FAFAF8] disabled:cursor-default"
                     placeholder="Purchase order ref"
                     value={form.header.poNoAndDate}
+                    disabled={isSubmitted}
                     onChange={e => setForm({...form, header: {...form.header, poNoAndDate: e.target.value}})}
                   />
                 </div>
@@ -392,8 +394,8 @@ const InvoiceForm = () => {
               <div className="flex flex-col mt-2">
                 <label className="text-[11px] font-bold text-[#6B7280] uppercase tracking-[1.5px] mb-1">Export Type</label>
                 <input 
-                  className="h-11 border border-[#E4E4E0] rounded-[5px] px-3.5 text-[13px] font-bold text-[#0C0E10] outline-none focus:border-[#95BF47] bg-[#F3F8E8]/30 disabled:bg-[#FAFAF8] disabled:cursor-default"
-                  value={form.totals.exportType}
+                  className="h-10 border border-[#E4E4E0] rounded-[5px] px-3 text-[14px] font-bold text-[#0C0E10] outline-none focus:border-[#95BF47] disabled:bg-[#FAFAF8] disabled:cursor-default"
+                  value={form.totals.exportType || ''}
                   disabled={isSubmitted}
                   placeholder="Enter export type details..."
                   onChange={e => setForm({...form, totals: {...form.totals, exportType: e.target.value}})}
@@ -423,7 +425,7 @@ const InvoiceForm = () => {
                     <p>{billedByDetails.city}, {billedByDetails.state} - {billedByDetails.postalCode}</p>
                     <p>{billedByDetails.country}</p>
                   </div>
-                  <button className="text-[13px] font-medium text-[#95BF47] hover:underline mt-1.5" onClick={() => navigate('/settings')}>✎ Edit Profile</button>
+                  {!isSubmitted && <button className="text-[13px] font-medium text-[#95BF47] hover:underline mt-1.5" onClick={() => navigate('/settings')}>✎ Edit Profile</button>}
                 </div>
               </div>
 
@@ -449,18 +451,22 @@ const InvoiceForm = () => {
                     </div>
                     <p className="text-[13px] text-[#6B7280] mt-2">Select Client/Business from the list</p>
                     
-                    <div className="flex items-center gap-2 my-3 text-[12px] text-[#D0D0CA] font-bold uppercase tracking-widest">
-                      <div className="flex-1 h-px bg-[#E4E4E0]"></div>
-                      <span>OR</span>
-                      <div className="flex-1 h-px bg-[#E4E4E0]"></div>
-                    </div>
+                    {!isSubmitted && (
+                      <>
+                        <div className="flex items-center gap-2 my-3 text-[12px] text-[#D0D0CA] font-bold uppercase tracking-widest">
+                          <div className="flex-1 h-px bg-[#E4E4E0]"></div>
+                          <span>OR</span>
+                          <div className="flex-1 h-px bg-[#E4E4E0]"></div>
+                        </div>
 
-                    <button 
-                      onClick={() => setIsClientModalOpen(true)}
-                      className="w-full h-10 bg-[#02172E] text-white rounded-[5px] text-[13px] font-bold flex items-center justify-center gap-2 hover:bg-[#03203d] transition-all"
-                    >
-                      + Add New Client
-                    </button>
+                        <button 
+                          onClick={() => setIsClientModalOpen(true)}
+                          className="w-full h-10 bg-[#02172E] text-white rounded-[5px] text-[13px] font-bold flex items-center justify-center gap-2 hover:bg-[#03203d] transition-all"
+                        >
+                          + Add New Client
+                        </button>
+                      </>
+                    )}
                   </>
                 ) : (
                   <div className="mt-2 h-10 border border-[#95BF47] bg-[#F3F8E8] rounded-[5px] flex items-center gap-2.5 px-3">
@@ -589,17 +595,18 @@ const InvoiceForm = () => {
                       <div className="relative group/item">
                         <div className="flex items-center gap-2">
                           <input 
-                            className="w-full text-[14px] text-[#0C0E10] font-medium outline-none bg-transparent placeholder:text-[#D0D0CA]"
+                            className="w-full text-[14px] text-[#0C0E10] font-medium outline-none bg-transparent placeholder:text-[#D0D0CA] disabled:cursor-default"
                             placeholder="Item Name / SKU Id"
                             value={item.name}
-                            onFocus={() => setActiveProductSearchId(item.id)}
+                            disabled={isSubmitted}
+                            onFocus={() => !isSubmitted && setActiveProductSearchId(item.id)}
                             onChange={e => {
                               const val = e.target.value;
                               updateItem(item.id, 'name', val);
                               setActiveProductSearchId(item.id);
                             }}
                           />
-                          {item.name ? (
+                          {item.name && !isSubmitted && (
                             <button
                               type="button"
                               className="text-[#D0D0CA] hover:text-[#EF4444] transition-colors p-1 rounded-full hover:bg-[#FEF2F2]"
@@ -614,8 +621,6 @@ const InvoiceForm = () => {
                             >
                               <X size={14} />
                             </button>
-                          ) : (
-                            <ChevronDown size={14} className="text-[#D0D0CA] group-focus-within:text-[#95BF47] transition-colors pointer-events-none" />
                           )}
                         </div>
 
@@ -677,9 +682,10 @@ const InvoiceForm = () => {
                           <div className="flex items-center gap-1">
                             <input 
                               autoFocus
-                              className="h-8 border border-[#95BF47] rounded-[4px] px-2 text-[12px] font-medium text-[#0C0E10] outline-none w-[100px]"
+                              className="h-8 border border-[#95BF47] rounded-[4px] px-2 text-[12px] font-medium text-[#0C0E10] outline-none w-[100px] disabled:bg-[#FAFAF8] disabled:border-[#E4E4E0] disabled:cursor-default"
                               placeholder="Type unit..."
                               value={item.unit || ''}
+                              disabled={isSubmitted}
                               onChange={e => updateItem(item.id, 'unit', e.target.value)}
                               onBlur={async (e) => {
                                 if (!e.target.value) {
@@ -696,20 +702,23 @@ const InvoiceForm = () => {
                                 }
                               }}
                             />
-                            <button 
-                              onClick={() => {
-                                updateItem(item.id, 'isCustomUnit', false);
-                                updateItem(item.id, 'unit', 'Product');
-                              }}
-                              className="text-[#6B7280] hover:text-[#0C0E10] p-1"
-                            >
-                              <X size={14} />
-                            </button>
+                            {!isSubmitted && (
+                              <button 
+                                onClick={() => {
+                                  updateItem(item.id, 'isCustomUnit', false);
+                                  updateItem(item.id, 'unit', 'Product');
+                                }}
+                                className="text-[#6B7280] hover:text-[#0C0E10] p-1"
+                              >
+                                <X size={14} />
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <select 
-                            className="h-8 border border-[#E4E4E0] rounded-[4px] px-2 text-[12px] font-medium text-[#0C0E10] outline-none bg-white cursor-pointer"
+                            className="h-8 border border-[#E4E4E0] rounded-[4px] px-2 text-[12px] font-medium text-[#0C0E10] outline-none bg-white disabled:bg-[#FAFAF8] disabled:cursor-default"
                             value={item.unit || 'Product'}
+                            disabled={isSubmitted}
                             onChange={e => {
                               if (e.target.value === 'CUSTOM') {
                                 updateItem(item.id, 'isCustomUnit', true);
@@ -735,16 +744,18 @@ const InvoiceForm = () => {
                     </td>
                     <td className="p-4 px-3">
                       <input 
-                        className="w-full text-[14px] text-[#6B7280] text-center outline-none bg-transparent"
+                        className="w-full text-[14px] text-[#6B7280] text-center outline-none bg-transparent disabled:cursor-default"
                         placeholder="#"
                         value={item.hsn}
+                        disabled={isSubmitted}
                         onChange={e => updateItem(item.id, 'hsn', e.target.value)}
                       />
                     </td>
                     <td className="p-4 px-3">
                       <input 
-                        className="w-full text-[14px] text-[#0C0E10] font-bold text-center outline-none bg-transparent"
+                        className="w-full text-[14px] text-[#0C0E10] font-bold text-center outline-none bg-transparent disabled:cursor-default"
                         value={item.quantity}
+                        disabled={isSubmitted}
                         onChange={e => updateItem(item.id, 'quantity', e.target.value)}
                       />
                     </td>
@@ -761,7 +772,7 @@ const InvoiceForm = () => {
                       </div>
                     </td>
                     <td className="p-4 px-3 text-right text-[14px] font-bold text-[#0C0E10]">
-                      {baseFormat((Number(item.quantity) || 0) * (Number(item.rate) || 0), form.settings.currency)}
+                      {baseFormat((Number(item.quantity) || 0) * (Number(item.rate) || 0), form.settings.currency, form.settings.numberFormat)}
                     </td>
                     <td className="p-4 px-4 text-center">
                       {!isSubmitted && (
@@ -795,7 +806,7 @@ const InvoiceForm = () => {
                 <div className="text-[15px] font-bold text-[#0C0E10] font-heading mb-3">Total in PDF</div>
                 <div className="flex justify-between items-center text-[14px]">
                   <span className="text-[#6B7280]">Amount</span>
-                  <span className="text-[#0C0E10] font-medium">{baseFormat(live.subtotal, form.settings.currency)}</span>
+                  <span className="text-[#0C0E10] font-medium">{baseFormat(live.subtotal, form.settings.currency, form.settings.numberFormat)}</span>
                 </div>
                 <div className="flex justify-between items-center text-[14px]">
                   <span className="text-[#6B7280]">Bank Charges</span>
@@ -812,7 +823,7 @@ const InvoiceForm = () => {
                 <div className="h-px bg-[#E4E4E0] my-3"></div>
                 <div className="flex justify-between items-center">
                   <span className="text-[20px] font-bold text-[#0C0E10] font-heading">Total ({form.settings.currency})</span>
-                  <span className="text-[20px] font-bold text-[#0C0E10] font-heading">{baseFormat(live.total, form.settings.currency)}</span>
+                  <span className="text-[20px] font-bold text-[#0C0E10] font-heading">{baseFormat(live.total, form.settings.currency, form.settings.numberFormat)}</span>
                 </div>
                 
                 <div className="flex justify-between items-center text-[13px] mt-2">
@@ -829,7 +840,7 @@ const InvoiceForm = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[14px] text-[#6B7280]">Total (INR)</span>
-                  <span className="text-[14px] font-bold text-[#0C0E10]">₹{live.totalInInr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="text-[14px] font-bold text-[#0C0E10]">₹{live.totalInInr.toLocaleString(form.settings.numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
 
                 <div className="pt-3">

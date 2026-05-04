@@ -5,6 +5,7 @@ import {
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const Items = () => {
   const [items, setItems] = useState([]);
@@ -12,6 +13,7 @@ const Items = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null, name: '' });
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,15 +47,17 @@ const Items = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id, name) => {
-    if (window.confirm(`Delete item "${name}"?`)) {
-      try {
-        await productApi.delete(id);
-        toast.success('Item deleted');
-        fetchItems();
-      } catch {
-        toast.error('Failed to delete item');
-      }
+  const handleDelete = (id, name) => {
+    setDeleteDialog({ isOpen: true, id, name });
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await productApi.delete(deleteDialog.id);
+      toast.success('Item deleted');
+      fetchItems();
+    } catch {
+      toast.error('Failed to delete item');
     }
   };
 
@@ -300,6 +304,15 @@ const Items = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog 
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ ...deleteDialog, isOpen: false })}
+        onConfirm={confirmDelete}
+        title="Delete Item"
+        message={`Are you sure you want to delete "${deleteDialog.name}"? This will remove it from your product list.`}
+        confirmText="Delete Item"
+      />
     </div>
   );
 };

@@ -7,6 +7,7 @@ import {
   MoreHorizontal, Search, ExternalLink, Globe, LayoutGrid
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import ConfirmDialog from '../components/ConfirmDialog';
 import ClientRegistrationModal from '../components/ClientRegistrationModal';
 
 const Clients = () => {
@@ -15,6 +16,7 @@ const Clients = () => {
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null, name: '' });
 
   const fetchClients = async () => {
     setLoading(true);
@@ -42,15 +44,17 @@ const Clients = () => {
     setIsClientModalOpen(true);
   };
 
-  const handleDelete = async (id, name) => {
-    if (window.confirm(`Delete client "${name}"?`)) {
-      try {
-        await clientApi.delete(id);
-        toast.success('Client deleted successfully');
-        fetchClients();
-      } catch {
-        toast.error('Failed to delete client');
-      }
+  const handleDelete = (id, name) => {
+    setDeleteDialog({ isOpen: true, id, name });
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await clientApi.delete(deleteDialog.id);
+      toast.success('Client deleted successfully');
+      fetchClients();
+    } catch {
+      toast.error('Failed to delete client');
     }
   };
 
@@ -186,6 +190,15 @@ const Clients = () => {
         }} 
         editingClient={editingClient}
         onSuccess={fetchClients}
+      />
+
+      <ConfirmDialog 
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ ...deleteDialog, isOpen: false })}
+        onConfirm={confirmDelete}
+        title="Delete Client"
+        message={`Are you sure you want to delete "${deleteDialog.name}"? This will remove all their records and compliance history.`}
+        confirmText="Delete Client"
       />
     </div>
   );

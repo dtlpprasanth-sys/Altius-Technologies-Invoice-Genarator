@@ -52,18 +52,18 @@ export const numberToWords = (num, currency = 'INR') => {
 };
 
 // Format currency
-export const formatCurrency = (amount, currency = 'INR') => {
+export const formatCurrency = (amount, currency = 'INR', locale = 'en-IN') => {
   const symbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ' };
   const sym = symbols[currency] || currency + ' ';
-  return `${sym}${Number(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `${sym}${Number(amount || 0).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 // Format date
-export const formatDate = (date) => {
+export const formatDate = (date, locale = 'en-IN') => {
   if (!date) return '-';
   const d = new Date(date);
   const day = String(d.getDate()).padStart(2, '0');
-  const month = d.toLocaleString('en-IN', { month: 'short' });
+  const month = d.toLocaleString(locale, { month: 'short' });
   const year = d.getFullYear();
   return `${day}-${month}-${year}`;
 };
