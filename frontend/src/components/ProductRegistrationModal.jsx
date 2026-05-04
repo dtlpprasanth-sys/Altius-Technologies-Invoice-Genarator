@@ -9,7 +9,7 @@ const ProductRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
     name: '',
     hsnCode: '',
     price: 0,
-    unit: 'per SKU',
+    unit: '',
     description: ''
   });
 

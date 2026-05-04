@@ -5,7 +5,7 @@ const puppeteer = require('puppeteer');
 const getInvoices = async (req, res) => {
   try {
     const { search, status } = req.query;
-    const where = { userId: req.user.id };
+    const where = {};
 
     if (status && status !== 'all') {
       where.status = status;
@@ -34,13 +34,13 @@ const getInvoices = async (req, res) => {
 const createInvoice = async (req, res) => {
   try {
     const { invoiceNumber } = req.body;
-    const existing = await Invoice.findOne({ where: { invoiceNumber, userId: req.user.id } });
+    const existing = await Invoice.findOne({ where: { invoiceNumber } });
     if (existing) return res.status(400).json({ message: 'Invoice number already exists' });
 
     const invoice = await Invoice.create({ ...req.body, userId: req.user.id });
     
-    // Update counter in settings
-    const settings = await Settings.findOne({ where: { userId: req.user.id } });
+    // Update counter in settings (global settings)
+    const settings = await Settings.findOne();
     if (settings) {
       const current = settings.invoiceCounter || '1';
       const length = current.length;
@@ -58,7 +58,7 @@ const createInvoice = async (req, res) => {
 const getInvoiceById = async (req, res) => {
   try {
     const invoice = await Invoice.findOne({
-      where: { id: req.params.id, userId: req.user.id }
+      where: { id: req.params.id }
     });
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     res.json(invoice);
@@ -70,7 +70,7 @@ const getInvoiceById = async (req, res) => {
 const updateInvoice = async (req, res) => {
   try {
     const invoice = await Invoice.findOne({
-      where: { id: req.params.id, userId: req.user.id }
+      where: { id: req.params.id }
     });
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     
@@ -84,7 +84,7 @@ const updateInvoice = async (req, res) => {
 const deleteInvoice = async (req, res) => {
   try {
     const invoice = await Invoice.findOne({
-      where: { id: req.params.id, userId: req.user.id }
+      where: { id: req.params.id }
     });
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     
@@ -97,7 +97,7 @@ const deleteInvoice = async (req, res) => {
 
 const getNextInvoiceNumber = async (req, res) => {
   try {
-    const settings = await Settings.findOne({ where: { userId: req.user.id } });
+    const settings = await Settings.findOne();
     if (!settings) return res.json({ nextNumber: 'INV-001' });
     
     const prefix = settings.invoicePrefix || 'INV';
@@ -113,8 +113,8 @@ const downloadInvoicePDF = async (req, res) => {
   let browser;
   try {
     const [invoice, settings] = await Promise.all([
-      Invoice.findOne({ where: { id: req.params.id, userId: req.user.id } }),
-      Settings.findOne({ where: { userId: req.user.id } })
+      Invoice.findOne({ where: { id: req.params.id } }),
+      Settings.findOne()
     ]);
 
     if (!invoice) return res.status(404).send('Invoice not found');
@@ -261,7 +261,7 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
       <td style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 8px 8px;">${item.name || ''}</td>
       <td style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 8px 4px; text-align: center;">${item.hsn || ''}</td>
       <td style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 8px 4px; text-align: center;">${item.quantity || ''}</td>
-      <td style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 8px 4px; text-align: center;">${item.unit || 'per SKU'}</td>
+      <td style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 8px 4px; text-align: center;">${item.unit || ''}</td>
       <td style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 8px 6px; text-align: right;">${sym}${fmt(item.rate)}</td>
       <td style="border-bottom: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: 700;">${sym}${fmt(item.amount)}</td>
     </tr>
@@ -404,7 +404,7 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
             <th class="b-b b-r" style="padding: 8px 4px; text-align: left;">Item</th>
             <th class="b-b b-r" style="padding: 8px 4px; text-align: center;">HSN/SAC</th>
             <th class="b-b b-r" style="padding: 8px 4px; text-align: center;">Quantity</th>
-            <th class="b-b b-r" style="padding: 8px 4px; text-align: center;">UOM</th>
+            <th class="b-b b-r" style="padding: 8px 4px; text-align: center;">UNIT</th>
             <th class="b-b b-r" style="padding: 8px 4px; text-align: right;">Rate</th>
             <th class="b-b" style="padding: 8px 4px; text-align: right;">Amount</th>
           </tr>

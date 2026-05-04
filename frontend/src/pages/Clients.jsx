@@ -32,7 +32,21 @@ const Clients = () => {
     }
   };
 
-  useEffect(() => { fetchClients(); }, []);
+  useEffect(() => { 
+    fetchClients(); 
+
+    // Synchronization: Refresh on focus
+    const handleFocus = () => fetchClients();
+    window.addEventListener('focus', handleFocus);
+    
+    // Synchronization: Polling (15s)
+    const interval = setInterval(fetchClients, 15000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
+  }, []);
 
   const openCreate = () => {
     setEditingClient(null);

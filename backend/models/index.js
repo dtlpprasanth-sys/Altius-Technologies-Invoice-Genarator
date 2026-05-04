@@ -4,6 +4,7 @@ const Invoice = require('./Invoice');
 const Product = require('./Product');
 const Unit = require('./Unit');
 const Settings = require('./Settings');
+const Admin = require('./Admin');
 
 // Define associations here if needed
 User.hasMany(Invoice, { foreignKey: 'userId' });
@@ -21,5 +22,6 @@ module.exports = {
   Invoice,
   Product,
   Unit,
-  Settings
+  Settings,
+  Admin
 };

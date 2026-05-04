@@ -125,7 +125,7 @@ const InvoiceTemplate = ({ data, settings }) => {
               <th className="border-r border-black p-2 text-left" style={{ width: '40%' }}>Item Description</th>
               <th className="border-r border-black p-2 text-center" style={{ width: '10%' }}>HSN/SAC</th>
               <th className="border-r border-black p-2 text-center" style={{ width: '10%' }}>Qty</th>
-              <th className="border-r border-black p-2 text-center" style={{ width: '10%' }}>UOM</th>
+              <th className="border-r border-black p-2 text-center" style={{ width: '10%' }}>UNIT</th>
               <th className="border-r border-black p-2 text-right" style={{ width: '10%' }}>Rate</th>
               <th className="p-2 text-right" style={{ width: '15%' }}>Amount</th>
             </tr>
@@ -137,7 +137,7 @@ const InvoiceTemplate = ({ data, settings }) => {
                 <td className="border-r border-black p-2.5 align-top font-bold text-black">{item.name}</td>
                 <td className="border-r border-black p-2.5 text-center align-top text-gray-600">{item.hsn}</td>
                 <td className="border-r border-black p-2.5 text-right align-top font-bold text-black">{item.quantity}</td>
-                <td className="border-r border-black p-2.5 text-center align-top text-gray-600">{item.unit || 'per SKU'}</td>
+                <td className="border-r border-black p-2.5 text-center align-top text-gray-600">{item.unit}</td>
                 <td className="border-r border-black p-2.5 text-right align-top text-black">{fmt(item.rate || 0)}</td>
                 <td className="p-2.5 text-right align-top font-bold text-black">{fmt(item.amount || 0)}</td>
               </tr>

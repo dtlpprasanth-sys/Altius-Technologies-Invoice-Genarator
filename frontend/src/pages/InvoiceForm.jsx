@@ -7,8 +7,9 @@ import {
   Plus, Trash2, X, ChevronDown, FileText, 
   Building2, Calendar, Hash, Eye, Check,
   Zap, PlusCircle, ImagePlus, Globe, Mail, Phone, MapPin, 
-  Briefcase, Landmark, Info
+  Briefcase, Landmark, Info, AlertCircle
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import ClientRegistrationModal from '../components/ClientRegistrationModal';
 import ProductRegistrationModal from '../components/ProductRegistrationModal';
 
@@ -23,10 +24,11 @@ const EXPORT_TYPES = [
 const defaultItem = () => ({ 
   id: Date.now() + Math.random(), 
   name: '', hsn: '', quantity: 1, rate: 0, 
-  amount: 0, unit: 'per SKU'
+  amount: 0, unit: ''
 });
 
 const InvoiceForm = () => {
+  const { user: authUser } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
@@ -38,8 +40,41 @@ const InvoiceForm = () => {
   const [isBilledByModalOpen, setIsBilledByModalOpen] = useState(false);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
   const [modalTriggerRowId, setModalTriggerRowId] = useState(null);
+  const [customUnit, setCustomUnit] = useState('');
   const [selectedClient, setSelectedClient] = useState(null);
+
+  // ... rest of state and effects ...
+
+  const handleCustomUnitSubmit = async (e) => {
+    e.preventDefault();
+    if (!customUnit.trim()) return;
+    
+    try {
+      const res = await unitApi.create({ name: customUnit.trim() });
+      const newUnit = res.data;
+      setUnits(prev => [...prev, newUnit]);
+      if (modalTriggerRowId) {
+        updateItem(modalTriggerRowId, 'unit', newUnit.name);
+      }
+      setIsUnitModalOpen(false);
+      setCustomUnit('');
+      toast.success('New unit added');
+    } catch (err) {
+      if (err.response?.status === 400 && err.response?.data?.message === 'Unit already exists') {
+        // Just select it if it exists
+        if (modalTriggerRowId) {
+          updateItem(modalTriggerRowId, 'unit', customUnit.trim());
+        }
+        setIsUnitModalOpen(false);
+        setCustomUnit('');
+        toast.info('Unit already exists and has been selected');
+      } else {
+        toast.error(err.response?.data?.message || 'Error adding unit');
+      }
+    }
+  };
   
   const logoInputRef = useRef(null);
   const signatureInputRef = useRef(null);
@@ -92,79 +127,133 @@ const InvoiceForm = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        const [sRes, cRes, pRes, uRes] = await Promise.all([
-          settingsApi.get(), clientApi.getAll(), productApi.getAll(), unitApi.getAll()
-        ]);
-        setClients(cRes.data);
-        setProducts(pRes.data || []);
-        setUnits(uRes.data || []);
-        const s = sRes.data;
-        if (s) {
-          setBilledByDetails({
-            businessName: s.businessName, country: s.country, city: s.city, 
-            gstin: s.gstin, pan: s.pan, state: s.state, postalCode: s.pincode,
-            streetAddress: s.address, email: s.email, phone: s.phone, lutDetails: s.lutDetails
-          });
-          if (!id) {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth() + 1;
-            const fy = month >= 4 ? `${year}-${(year + 1).toString().slice(-2)}` : `${year - 1}-${year.toString().slice(-2)}`;
-            const invNo = `${s.invoicePrefix || 'INV'}-${String(s.invoiceCounter || 1).padStart(3, '0')}/${fy}`;
+        // Individual fetches to prevent one failure from blocking others
+        try {
+          const sRes = await settingsApi.get();
+          const s = sRes.data;
+          if (s) {
+            setBilledByDetails({
+              businessName: s.businessName || '', 
+              country: s.country || 'India', 
+              city: s.city || '', 
+              gstin: s.gstin || '', 
+              pan: s.pan || '', 
+              state: s.state || '', 
+              postalCode: s.pincode || '',
+              streetAddress: s.address || '', 
+              email: s.email || '', 
+              phone: s.phone || '', 
+              lutDetails: s.lutDetails || ''
+            });
 
-            setForm(f => ({
-              ...f,
-              header: { 
-                ...f.header, 
-                logo: s.logoUrl, 
-                invoiceNumber: invNo,
-                subtitle: s.lutDetails || ''
-              },
-              totals: {
-                ...f.totals,
-                signature: s.signatureUrl,
-                exportType: ''
-              },
-              settings: { ...f.settings, currency: s.currency || 'USD' }
-            }));
-          }
-        }
-        if (id) {
-          const { data } = await invoiceApi.getById(id);
-          setForm(prev => ({ 
-            ...prev,
-            header: {
-              title: data.invoiceTitle || 'Export Invoice',
-              invoiceNumber: data.invoiceNumber || '',
-              invoiceDate: data.invoiceDate ? new Date(data.invoiceDate).toISOString().slice(0, 10) : '',
-              dueDate: data.dueDate ? new Date(data.dueDate).toISOString().slice(0, 10) : '',
-              logo: data.logoUrl || '',
-              poNoAndDate: data.poNoAndDate || '',
-              subtitle: data.invoiceSubTitle || ''
-            },
-            items: data.items && data.items.length > 0 ? data.items : [defaultItem()],
-            totals: {
-              bankCharges: data.bankCharges || 0,
-              terms: data.terms || [],
-              exchangeRate: data.exchangeRate || '0',
-              exportType: data.softwareExportType || '',
-              signature: data.signatureUrl || ''
-            },
-            settings: {
-              ...prev.settings,
-              currency: data.currency || 'USD'
+            if (!id) {
+              const now = new Date();
+              const year = now.getFullYear();
+              const month = now.getMonth() + 1;
+              const fy = month >= 4 ? `${year}-${(year + 1).toString().slice(-2)}` : `${year - 1}-${year.toString().slice(-2)}`;
+              const invNo = `${s.invoicePrefix || 'INV'}-${String(s.invoiceCounter || 1).padStart(3, '0')}/${fy}`;
+
+              setForm(f => ({
+                ...f,
+                header: { 
+                  ...f.header, 
+                  logo: s.logoUrl || '', 
+                  invoiceNumber: invNo,
+                  subtitle: s.lutDetails || ''
+                },
+                totals: {
+                  ...f.totals,
+                  signature: s.signatureUrl || '',
+                  exportType: '',
+                  terms: (() => {
+                    const t = s.termsAndConditions;
+                    if (Array.isArray(t)) return t.map((item, i) => ({ id: Date.now() + i, text: typeof item === 'object' ? item.text : item }));
+                    if (typeof t === 'string' && t.trim()) {
+                      try {
+                        const parsed = JSON.parse(t);
+                        if (Array.isArray(parsed)) return parsed.map((item, i) => ({ id: Date.now() + i, text: typeof item === 'object' ? item.text : item }));
+                      } catch (e) {
+                        return [{ id: Date.now(), text: t }];
+                      }
+                    }
+                    return [];
+                  })()
+                },
+                settings: { ...f.settings, currency: s.currency || 'USD' }
+              }));
             }
-          }));
-          if (data.businessDetails) setBilledByDetails(data.businessDetails);
-          setInvoiceStatus(data.status || 'draft');
-          if (data.clientId || (data.clientDetails && data.clientDetails.id)) {
-            const searchId = data.clientId || data.clientDetails.id;
-            const found = cRes.data.find(c => (c.id || c._id) === searchId);
-            if (found) setSelectedClient(found);
           }
+        } catch (err) {
+          console.error('Settings Fetch Error:', err);
+          toast.error('Could not load organization settings');
         }
-      } catch (err) { console.error(err); }
-      finally { setLoading(false); }
+
+        try {
+          const cRes = await clientApi.getAll();
+          setClients(cRes.data || []);
+          
+          if (id) {
+            // Need clients to find selected client if editing
+            const invoiceRes = await invoiceApi.getById(id);
+            const data = invoiceRes.data;
+            setForm(prev => ({ 
+              ...prev,
+              header: {
+                title: data.invoiceTitle || 'Export Invoice',
+                invoiceNumber: data.invoiceNumber || '',
+                invoiceDate: data.invoiceDate ? new Date(data.invoiceDate).toISOString().slice(0, 10) : '',
+                dueDate: data.dueDate ? new Date(data.dueDate).toISOString().slice(0, 10) : '',
+                logo: data.logoUrl || '',
+                poNoAndDate: data.poNoAndDate || '',
+                subtitle: data.invoiceSubTitle || ''
+              },
+              items: data.items && data.items.length > 0 ? data.items : [defaultItem()],
+              totals: {
+                bankCharges: data.bankCharges || 0,
+                terms: data.terms || [],
+                exchangeRate: data.exchangeRate || '0',
+                exportType: data.softwareExportType || '',
+                signature: data.signatureUrl || ''
+              },
+              settings: {
+                ...prev.settings,
+                currency: data.currency || 'USD'
+              }
+            }));
+            if (data.businessDetails) setBilledByDetails(data.businessDetails);
+            setInvoiceStatus(data.status || 'draft');
+            
+            const searchId = data.clientId || data.clientDetails?.id;
+            if (searchId) {
+              const found = (cRes.data || []).find(c => (c.id || c._id) === searchId);
+              if (found) setSelectedClient(found);
+            }
+          }
+        } catch (err) {
+          console.error('Client/Invoice Fetch Error:', err);
+          toast.error('Could not load clients or invoice data');
+        }
+
+        try {
+          const pRes = await productApi.getAll();
+          setProducts(pRes.data || []);
+        } catch (err) {
+          console.error('Product Fetch Error:', err);
+          toast.error('Could not load item master list');
+        }
+
+        try {
+          const uRes = await unitApi.getAll();
+          setUnits(uRes.data || []);
+        } catch (err) {
+          console.error('Unit Fetch Error:', err);
+        }
+
+      } catch (err) { 
+        console.error('InvoiceForm Init Error:', err);
+      } finally { 
+        setLoading(false); 
+      }
     };
     init();
   }, [id]);
@@ -413,8 +502,10 @@ const InvoiceForm = () => {
                   className={`mt-2 h-10 border border-[#E4E4E0] rounded-[5px] flex items-center gap-2.5 px-3 transition-all ${isSubmitted ? 'bg-[#FAFAF8] cursor-default' : 'cursor-pointer hover:border-[#D0D0CA] bg-white'}`} 
                   onClick={() => !isSubmitted && setIsBilledByModalOpen(true)}
                 >
-                  <div className="w-6 h-6 bg-[#02172E] rounded-[3px] flex items-center justify-center text-white text-[12px] font-bold">P</div>
-                  <span className="text-[14px] font-bold text-[#0C0E10] flex-1 truncate">{billedByDetails.businessName || 'Praba'}</span>
+                  <div className="w-6 h-6 bg-[#02172E] rounded-[3px] flex items-center justify-center text-white text-[12px] font-bold">
+                    {billedByDetails.businessName ? billedByDetails.businessName.charAt(0).toUpperCase() : (authUser?.name?.charAt(0).toUpperCase() || 'U')}
+                  </div>
+                  <span className="text-[14px] font-bold text-[#0C0E10] flex-1 truncate">{billedByDetails.businessName || authUser?.name || 'User'}</span>
                   <span className="text-[14px] text-[#6B7280]">⌄</span>
                 </div>
                 <div className="mt-3 space-y-1">
@@ -639,27 +730,34 @@ const InvoiceForm = () => {
                                 <X size={14} />
                               </button>
                             </div>
-                            {products
-                              .filter(p => !item.name || p.name.toLowerCase().includes(item.name.toLowerCase()))
-                              .slice(0, 10)
-                              .map(p => (
-                                <button
-                                  key={p.id || p._id}
-                                  className="w-full text-left px-4 py-3 hover:bg-[#F3F8E8] transition-all flex items-center justify-between group/opt border-b border-[#FAFAF8] last:border-0"
-                                  onClick={() => {
-                                    updateItem(item.id, 'name', p.name);
-                                    updateItem(item.id, 'rate', p.price || p.rate || 0);
-                                    if (p.hsnCode) updateItem(item.id, 'hsn', p.hsnCode);
-                                    setActiveProductSearchId(null);
-                                  }}
-                                >
-                                  <div>
-                                    <p className="text-[14px] font-bold text-[#0C0E10] group-hover/opt:text-[#95BF47]">{p.name}</p>
-                                    {p.hsnCode && <p className="text-[11px] text-[#6B7280]">HSN: {p.hsnCode}</p>}
-                                  </div>
-                                </button>
-                              ))
-                            }
+                            {products.filter(p => !item.name || p.name.toLowerCase().includes(item.name.toLowerCase())).length > 0 ? (
+                              products
+                                .filter(p => !item.name || p.name.toLowerCase().includes(item.name.toLowerCase()))
+                                .slice(0, 10)
+                                .map(p => (
+                                  <button
+                                    key={p.id || p._id}
+                                    className="w-full text-left px-4 py-3 hover:bg-[#F3F8E8] transition-all flex items-center justify-between group/opt border-b border-[#FAFAF8] last:border-0"
+                                    onClick={() => {
+                                      updateItem(item.id, 'name', p.name);
+                                      updateItem(item.id, 'rate', p.price || p.rate || 0);
+                                      if (p.hsnCode) updateItem(item.id, 'hsn', p.hsnCode);
+                                      if (p.unit) updateItem(item.id, 'unit', p.unit);
+                                      setActiveProductSearchId(null);
+                                    }}
+                                  >
+                                    <div>
+                                      <p className="text-[14px] font-bold text-[#0C0E10] group-hover/opt:text-[#95BF47]">{p.name}</p>
+                                      {p.hsnCode && <p className="text-[11px] text-[#6B7280]">HSN: {p.hsnCode}</p>}
+                                    </div>
+                                  </button>
+                                ))
+                            ) : (
+                              <div className="p-8 text-center bg-white">
+                                <Box size={32} className="mx-auto text-[#D0D0CA] mb-2" />
+                                <p className="text-[13px] font-medium text-[#6B7280]">No matching items found</p>
+                              </div>
+                            )}
                             <div className="p-2 bg-[#FAFAF8] border-t border-[#E4E4E0]">
                               <button 
                                 className="w-full py-2 text-[12px] font-bold text-[#95BF47] hover:bg-white rounded-[4px] border border-dashed border-[#95BF47]/30 transition-all flex items-center justify-center gap-2"
@@ -678,68 +776,31 @@ const InvoiceForm = () => {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Unit</span>
-                        {item.isCustomUnit ? (
-                          <div className="flex items-center gap-1">
-                            <input 
-                              autoFocus
-                              className="h-8 border border-[#95BF47] rounded-[4px] px-2 text-[12px] font-medium text-[#0C0E10] outline-none w-[100px] disabled:bg-[#FAFAF8] disabled:border-[#E4E4E0] disabled:cursor-default"
-                              placeholder="Type unit..."
-                              value={item.unit || ''}
-                              disabled={isSubmitted}
-                              onChange={e => updateItem(item.id, 'unit', e.target.value)}
-                              onBlur={async (e) => {
-                                if (!e.target.value) {
-                                  updateItem(item.id, 'isCustomUnit', false);
-                                } else {
-                                  // Save new unit if it doesn't exist
-                                  const exists = units.some(u => u.name.toLowerCase() === e.target.value.toLowerCase());
-                                  if (!exists) {
-                                    try {
-                                      const res = await unitApi.create({ name: e.target.value });
-                                      setUnits(prev => [...prev, res.data]);
-                                    } catch (err) { console.error(err); }
-                                  }
-                                }
-                              }}
-                            />
-                            {!isSubmitted && (
-                              <button 
-                                onClick={() => {
-                                  updateItem(item.id, 'isCustomUnit', false);
-                                  updateItem(item.id, 'unit', 'Product');
-                                }}
-                                className="text-[#6B7280] hover:text-[#0C0E10] p-1"
-                              >
-                                <X size={14} />
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <select 
-                            className="h-8 border border-[#E4E4E0] rounded-[4px] px-2 text-[12px] font-medium text-[#0C0E10] outline-none bg-white disabled:bg-[#FAFAF8] disabled:cursor-default"
-                            value={item.unit || 'Product'}
-                            disabled={isSubmitted}
-                            onChange={e => {
-                              if (e.target.value === 'CUSTOM') {
-                                updateItem(item.id, 'isCustomUnit', true);
-                                updateItem(item.id, 'unit', '');
-                              } else {
-                                updateItem(item.id, 'unit', e.target.value);
-                              }
-                            }}
-                          >
-                            <option value="Product">Product</option>
-                            <option value="Service">Service</option>
-                            <option value="Hours">Hours</option>
-                            <option value="Days">Days</option>
-                            <option value="Box">Box</option>
-                            <option value="Nos">Nos</option>
-                            {units.filter(u => !['Product', 'Service', 'Hours', 'Days', 'Box', 'Nos'].includes(u.name)).map(u => (
-                              <option key={u.id || u._id} value={u.name}>{u.name}</option>
-                            ))}
-                            <option value="CUSTOM">+ Custom</option>
-                          </select>
-                        )}
+                        <select 
+                          className="h-8 border border-[#E4E4E0] rounded-[4px] px-2 text-[12px] font-medium text-[#0C0E10] outline-none bg-white disabled:bg-[#FAFAF8] disabled:cursor-default"
+                          value={item.unit || 'Product'}
+                          disabled={isSubmitted}
+                          onChange={e => {
+                            if (e.target.value === 'CUSTOM') {
+                              setModalTriggerRowId(item.id);
+                              setIsUnitModalOpen(true);
+                            } else {
+                              updateItem(item.id, 'unit', e.target.value);
+                            }
+                          }}
+                        >
+                          <option value="Product">Product</option>
+                          <option value="Service">Service</option>
+                          <option value="Hours">Hours</option>
+                          <option value="Days">Days</option>
+                          <option value="Box">Box</option>
+                          <option value="Nos">Nos</option>
+                          <option value="per SKU">per SKU</option>
+                          {units.filter(u => !['Product', 'Service', 'Hours', 'Days', 'Box', 'Nos', 'per SKU'].includes(u.name)).map(u => (
+                            <option key={u.id || u._id} value={u.name}>{u.name}</option>
+                          ))}
+                          <option value="CUSTOM">+ Custom</option>
+                        </select>
                       </div>
                     </td>
                     <td className="p-4 px-3">
@@ -871,16 +932,16 @@ const InvoiceForm = () => {
 
           {/* BLOCK 7: TERMS */}
           <div className="bg-white border border-[#E4E4E0] rounded-[5px]">
-            <div className="p-5 border-b border-[#E4E4E0] flex justify-between items-center">
-              <span className="text-[16px] font-bold text-[#0C0E10] font-heading">Terms and Conditions</span>
+            <div className="p-3 px-5 border-b border-[#E4E4E0] flex justify-between items-center">
+              <span className="text-[14px] font-bold text-[#0C0E10] font-heading">Terms and Conditions</span>
               <button className="text-[#6B7280] hover:text-[#0C0E10]">×</button>
             </div>
-            <div className="divide-y divide-[#E4E4E0]">
+            <div className="p-2 space-y-1">
               {form.totals.terms.map((term, i) => (
-                <div key={term.id} className="p-4 px-5 flex items-start gap-3 group">
-                  <span className="text-[13px] font-bold text-[#6B7280] mt-1">{String(i + 1).padStart(2, '0')}.</span>
+                <div key={term.id} className="p-2 px-4 flex items-start gap-4 group hover:bg-[#FAFAF8] rounded transition-all">
+                  <span className="text-[12px] font-bold text-[#6B7280] mt-1.5 shrink-0">{String(i + 1).padStart(2, '0')}.</span>
                   <textarea 
-                    className="text-[13px] text-[#0C0E10] flex-1 outline-none bg-transparent resize-none min-h-[20px] overflow-hidden leading-relaxed disabled:cursor-default"
+                    className="text-[13px] text-[#0C0E10] w-full min-w-0 outline-none bg-transparent resize-none min-h-[20px] overflow-hidden leading-relaxed disabled:cursor-default"
                     value={term.text}
                     disabled={isSubmitted}
                     rows={1}
@@ -902,19 +963,19 @@ const InvoiceForm = () => {
                     placeholder="Enter term..."
                   />
                   {!isSubmitted && (
-                    <div className="flex items-center gap-1.5 self-center">
+                    <div className="flex items-center gap-0.5 self-center">
                       <button 
-                        className="w-7 h-7 flex items-center justify-center text-[#6B7280] hover:text-[#CC3A3A] hover:bg-[#FAFAF8] rounded transition-all"
+                        className="w-6 h-6 flex items-center justify-center text-[#6B7280] hover:text-[#CC3A3A] hover:bg-white rounded transition-all"
                         title="Remove"
                         onClick={() => {
                           const newTerms = form.totals.terms.filter(t => t.id !== term.id);
                           setForm({...form, totals: {...form.totals, terms: newTerms}});
                         }}
                       >
-                        <X size={14} />
+                        <X size={12} />
                       </button>
                       <button 
-                        className={`w-7 h-7 flex items-center justify-center transition-all rounded ${i === form.totals.terms.length - 1 ? 'text-[#D0D0CA] cursor-not-allowed' : 'text-[#6B7280] hover:text-[#95BF47] hover:bg-[#F3F8E8]'}`}
+                        className={`w-6 h-6 flex items-center justify-center transition-all rounded ${i === form.totals.terms.length - 1 ? 'text-[#D0D0CA] cursor-not-allowed' : 'text-[#6B7280] hover:text-[#95BF47] hover:bg-white'}`}
                         disabled={i === form.totals.terms.length - 1}
                         onClick={(e) => {
                           e.preventDefault();
@@ -924,10 +985,10 @@ const InvoiceForm = () => {
                           setForm({...form, totals: {...form.totals, terms: newTerms}});
                         }}
                       >
-                        <span className="text-[18px]">↓</span>
+                        <span className="text-[16px]">↓</span>
                       </button>
                       <button 
-                        className={`w-7 h-7 flex items-center justify-center transition-all rounded ${i === 0 ? 'text-[#D0D0CA] cursor-not-allowed' : 'text-[#6B7280] hover:text-[#95BF47] hover:bg-[#F3F8E8]'}`}
+                        className={`w-6 h-6 flex items-center justify-center transition-all rounded ${i === 0 ? 'text-[#D0D0CA] cursor-not-allowed' : 'text-[#6B7280] hover:text-[#95BF47] hover:bg-white'}`}
                         disabled={i === 0}
                         onClick={(e) => {
                           e.preventDefault();
@@ -1013,6 +1074,47 @@ const InvoiceForm = () => {
           setModalTriggerRowId(null);
         }}
       />
+
+      {/* CUSTOM UNIT MODAL */}
+      {isUnitModalOpen && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-6 bg-[#02172E]/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white w-full max-w-[400px] rounded-[5px] shadow-2xl border border-[#E4E4E0] animate-scale-up">
+            <div className="p-6 border-b border-[#E4E4E0] flex justify-between items-center">
+              <h3 className="text-[18px] font-bold text-[#0C0E10]">Add Custom Unit</h3>
+              <button onClick={() => setIsUnitModalOpen(false)} className="text-[#6B7280] hover:text-[#0C0E10]">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleCustomUnitSubmit} className="p-6 space-y-4">
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">Unit Name</label>
+                <input 
+                  autoFocus
+                  className="w-full h-11 border border-[#95BF47] rounded-[5px] px-3 text-[14px] font-medium text-[#0C0E10] outline-none"
+                  placeholder="e.g. Metric Tons"
+                  value={customUnit}
+                  onChange={e => setCustomUnit(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button 
+                  type="button"
+                  onClick={() => setIsUnitModalOpen(false)}
+                  className="px-4 py-2 text-[13px] font-bold text-[#6B7280] hover:text-[#0C0E10]"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-6 py-2 bg-[#02172E] text-white rounded-[5px] text-[13px] font-bold hover:bg-[#0C0E10]"
+                >
+                  Add Unit
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

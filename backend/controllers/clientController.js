@@ -6,7 +6,6 @@ const { Op } = require('sequelize');
 const getClients = async (req, res) => {
   try {
     const clients = await Client.findAll({ 
-      where: { userId: req.user.id },
       order: [['createdAt', 'DESC']]
     });
     
@@ -39,7 +38,7 @@ const createClient = async (req, res) => {
 // @route GET /api/clients/:id
 const getClientById = async (req, res) => {
   try {
-    const client = await Client.findOne({ where: { id: req.params.id, userId: req.user.id } });
+    const client = await Client.findOne({ where: { id: req.params.id } });
     if (!client) return res.status(404).json({ message: 'Client not found' });
     
     const plain = client.get({ plain: true });
@@ -53,7 +52,7 @@ const getClientById = async (req, res) => {
 // @route PUT /api/clients/:id
 const updateClient = async (req, res) => {
   try {
-    const client = await Client.findOne({ where: { id: req.params.id, userId: req.user.id } });
+    const client = await Client.findOne({ where: { id: req.params.id } });
     if (!client) return res.status(404).json({ message: 'Client not found' });
     
     await client.update(req.body);
@@ -69,7 +68,7 @@ const updateClient = async (req, res) => {
 // @route DELETE /api/clients/:id
 const deleteClient = async (req, res) => {
   try {
-    const deleted = await Client.destroy({ where: { id: req.params.id, userId: req.user.id } });
+    const deleted = await Client.destroy({ where: { id: req.params.id } });
     if (!deleted) return res.status(404).json({ message: 'Client not found' });
     res.json({ message: 'Client deleted' });
   } catch (error) {

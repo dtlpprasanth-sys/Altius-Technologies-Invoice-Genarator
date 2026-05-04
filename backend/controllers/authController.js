@@ -27,8 +27,11 @@ const registerUser = async (req, res) => {
       password 
     });
 
-    // Create default settings for user
-    await Settings.create({ userId: user.id, businessName: name });
+    // Create default settings if none exist (shared system)
+    const existingSettings = await Settings.findOne();
+    if (!existingSettings) {
+      await Settings.create({ userId: user.id, businessName: name });
+    }
 
     // Send response formatted for frontend expectations
     res.status(201).json({
@@ -36,6 +39,7 @@ const registerUser = async (req, res) => {
       id: user.id,
       name: user.name,
       email: user.email,
+      isAdmin: user.isAdmin,
       token: generateToken(user.id),
     });
   } catch (error) {
@@ -52,11 +56,16 @@ const loginUser = async (req, res) => {
     const user = await User.findOne({ where: { email: email.toLowerCase().trim() } });
 
     if (user && (await user.matchPassword(password))) {
+      if (!user.isActive) {
+        return res.status(401).json({ message: 'Account is deactivated. Please contact administrator.' });
+      }
+
       res.json({
         _id: user.id, // Aliasing for frontend
         id: user.id,
         name: user.name,
         email: user.email,
+        isAdmin: user.isAdmin,
         token: generateToken(user.id),
       });
     } else {

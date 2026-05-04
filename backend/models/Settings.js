@@ -32,7 +32,21 @@ const Settings = sequelize.define('Settings', {
   website: { type: DataTypes.STRING },
   lutDetails: { type: DataTypes.TEXT },
   fiscalYear: { type: DataTypes.STRING },
-  softwareExportType: { type: DataTypes.STRING, defaultValue: 'Data Entry and conversion, Software processing, RBI Code: 907' }
+  softwareExportType: { type: DataTypes.STRING, defaultValue: 'Data Entry and conversion, Software processing, RBI Code: 907' },
+  termsAndConditions: { 
+    type: DataTypes.TEXT,
+    get() {
+      const rawValue = this.getDataValue('termsAndConditions');
+      try {
+        return rawValue ? JSON.parse(rawValue) : [];
+      } catch (e) {
+        return [];
+      }
+    },
+    set(value) {
+      this.setDataValue('termsAndConditions', JSON.stringify(value || []));
+    }
+  }
 });
 
 module.exports = Settings;

@@ -4,7 +4,7 @@ const Settings = require('../models/Settings');
 // @route GET /api/settings
 const getSettings = async (req, res) => {
   try {
-    let settings = await Settings.findOne({ where: { userId: req.user.id } });
+    let settings = await Settings.findOne();
     if (!settings) {
       settings = await Settings.create({ userId: req.user.id });
     }
@@ -18,7 +18,7 @@ const getSettings = async (req, res) => {
 // @route PUT /api/settings
 const updateSettings = async (req, res) => {
   try {
-    let settings = await Settings.findOne({ where: { userId: req.user.id } });
+    let settings = await Settings.findOne();
     if (settings) {
       await settings.update(req.body);
     } else {

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, FileText, Users, LogOut, Zap, 
-  ChevronLeft, ChevronRight, Box, User
+  ChevronLeft, ChevronRight, Box, User, Shield
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -19,6 +19,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { to: '/settings', icon: User, label: 'Profile', id: 'settings' },
   ];
 
+  if (user?.isAdmin) {
+    navItems.push({ to: '/admin/dashboard', icon: Shield, label: 'Manage Admins', id: 'manage-admins' });
+  }
+
   const isActive = (to) => {
     const currentPath = location?.pathname || '';
     return currentPath === to || currentPath.startsWith(`${to}/`);
@@ -32,7 +36,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Logo Area */}
       <div className="sidebar-logo">
         <Zap className="bolt" size={18} fill="currentColor" />
-        <span className="sidebar-logo-text uppercase tracking-wider">InvoiceFlow</span>
+        <span className="sidebar-logo-text uppercase tracking-wider">Nxt Invoice</span>
       </div>
       <div className="sidebar-accent"></div>
 

@@ -76,4 +76,13 @@ export const unitApi = {
   create: (data) => api.post('/units', data),
 };
 
+// Admin
+export const adminApi = {
+  login: (data) => api.post('/admin/login', data),
+  getMe: () => api.get('/admin/me'),
+  list: () => api.get('/admin/list'),
+  create: (data) => api.post('/admin/create', data),
+  toggleStatus: (id) => api.put(`/admin/${id}/toggle-status`),
+};
+
 export default api;

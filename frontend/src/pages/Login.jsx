@@ -67,12 +67,12 @@ const Login = () => {
 
               <form onSubmit={handleSubmit}>
                 <div className="mb-6">
-                  <label className="text-[11px] font-bold tracking-[1.5px] uppercase text-[#6B7280] block mb-1.5">Email Address</label>
+                  <label className="text-[11px] font-bold tracking-[1.5px] uppercase text-[#6B7280] block mb-1.5">Username</label>
                   <input
-                    type="email"
+                    type="text"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="you@company.com"
+                    placeholder="admin"
                     className="w-full h-12 border-b border-[#E4E4E0] text-[14px] text-[#0C0E10] bg-transparent outline-none focus:border-[#95BF47] transition-all placeholder:text-[#6B7280]/50"
                   />
                 </div>
@@ -105,9 +105,9 @@ const Login = () => {
               </form>
 
               <div className="text-center mt-5 text-[13px] text-[#6B7280]">
-                Don't have an account?{' '}
-                <Link to="/register" className="text-[#95BF47] font-bold hover:underline">
-                  Create one free
+                Admin access?{' '}
+                <Link to="/admin/login" className="text-[#95BF47] font-bold hover:underline">
+                  Go to Admin Console
                 </Link>
               </div>
             </div>

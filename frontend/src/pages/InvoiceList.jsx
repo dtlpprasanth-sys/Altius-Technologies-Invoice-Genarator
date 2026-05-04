@@ -37,7 +37,21 @@ const InvoiceList = () => {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchInvoices(); }, [search, status]);
+  useEffect(() => { 
+    fetchInvoices(); 
+
+    // Synchronization: Refresh when window gets focus
+    const handleFocus = () => fetchInvoices();
+    window.addEventListener('focus', handleFocus);
+    
+    // Synchronization: Periodic polling (every 15s)
+    const interval = setInterval(fetchInvoices, 15000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
+  }, [search, status]);
 
   const handleDelete = (id, num, e) => {
     e.stopPropagation();

@@ -243,7 +243,7 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
                 <td colSpan={7} style={{ borderBottom:B }} />
               </tr>
               <tr style={{ fontSize:'9.5pt', fontWeight:700 }}>
-                {['', 'Item', 'HSN/SAC', 'Quantity', 'UOM', 'Rate', 'Amount'].map((h,i,arr) => (
+                {['', 'Item', 'HSN/SAC', 'Quantity', 'UNIT', 'Rate', 'Amount'].map((h,i,arr) => (
                   <th key={i} style={{
                     borderBottom:B, borderRight: i < arr.length-1 ? B : 'none',
                     padding:'8px 4px', textAlign: i===1?'left':i>4?'right':'center', fontWeight:700
@@ -259,7 +259,7 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
                   <td style={{ borderBottom:B, borderRight:B, padding:'8px 8px' }}>{item.name}</td>
                   <td style={{ borderBottom:B, borderRight:B, padding:'8px 4px', textAlign:'center' }}>{item.hsn}</td>
                   <td style={{ borderBottom:B, borderRight:B, padding:'8px 4px', textAlign:'center' }}>{item.quantity}</td>
-                  <td style={{ borderBottom:B, borderRight:B, padding:'8px 4px', textAlign:'center' }}>{item.unit || 'per SKU'}</td>
+                  <td style={{ borderBottom:B, borderRight:B, padding:'8px 4px', textAlign:'center' }}>{item.unit}</td>
                   <td style={{ borderBottom:B, borderRight:B, padding:'8px 6px', textAlign:'right' }}>{sym}{Number(item.rate||0).toFixed(2)}</td>
                   <td style={{ borderBottom:B, padding:'8px 6px', textAlign:'right', fontWeight:700 }}>{sym}{Number(item.amount||0).toFixed(2)}</td>
                 </tr>

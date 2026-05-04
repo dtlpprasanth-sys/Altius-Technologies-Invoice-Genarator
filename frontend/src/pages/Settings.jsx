@@ -5,7 +5,8 @@ import {
   Building2, Mail, Phone, Landmark, Hash, 
   Image as ImageIcon, Save, Upload, Edit3,
   Search, Bell, Palette, Briefcase, ChevronRight,
-  User, Shield, CreditCard, Globe, Zap, Settings as SettingsIcon, PenTool
+  User, Shield, CreditCard, Globe, Zap, Settings as SettingsIcon, PenTool,
+  FileText, Plus, Trash2, X
 } from 'lucide-react';
 
 const DataField = ({ label, value, field, type = 'text', fullWidth = false, isEditing, settings, setSettings }) => (
@@ -43,7 +44,7 @@ const Settings = () => {
     gstin: '', pan: '', ieCode: '', cin: '', website: '', lutDetails: '',
     satelliteStation: '', bankName: '', accountName: '', accountNumber: '', 
     ifscCode: '', iban: '', swiftCode: '', invoicePrefix: 'INV', invoiceCounter: 1,
-    fiscalYear: '', logoUrl: '', signatureUrl: ''
+    fiscalYear: '', logoUrl: '', signatureUrl: '', termsAndConditions: []
   });
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -57,7 +58,8 @@ const Settings = () => {
     'Business Profile': useRef(null),
     'Branding & Identity': useRef(null),
     'Invoice Defaults': useRef(null),
-    'Bank Details': useRef(null)
+    'Bank Details': useRef(null),
+    'Terms & Conditions': useRef(null)
   };
 
   useEffect(() => {
@@ -105,6 +107,7 @@ const Settings = () => {
     { id: 'Branding & Identity', icon: <Palette size={18}/>, emoji: '🎨' },
     { id: 'Invoice Defaults', icon: <Hash size={18}/>, emoji: '#' },
     { id: 'Bank Details', icon: <Landmark size={18}/>, emoji: '🏦' },
+    { id: 'Terms & Conditions', icon: <FileText size={18}/>, emoji: '📝' },
   ];
 
   if (loading) return (
@@ -228,15 +231,15 @@ const Settings = () => {
                     <div className="flex-1 space-y-3">
                       <label className="settings-label text-[11px] font-bold uppercase tracking-[0.15em] text-[#6B7280]">Company Logo</label>
                       <div 
-                        onClick={() => logoInputRef.current.click()}
-                        className="upload-zone w-full h-[180px] rounded-[5px] border-2 border-dashed flex flex-col items-center justify-center transition-all overflow-hidden cursor-pointer border-[#E4E4E0] hover:border-[#95BF47] hover:bg-[#F3F8E8]"
+                        onClick={() => isEditing && logoInputRef.current.click()}
+                        className={`upload-zone w-full h-[180px] rounded-[5px] border-2 border-dashed flex flex-col items-center justify-center transition-all overflow-hidden ${isEditing ? 'cursor-pointer border-[#E4E4E0] hover:border-[#95BF47] hover:bg-[#F3F8E8]' : 'cursor-default border-[#F3F4F6]'}`}
                       >
                         {settings.logoUrl ? (
                           <img src={settings.logoUrl} className="w-full h-full object-contain p-4" alt="Logo"/>
                         ) : (
                           <div className="text-center">
                             <span className="text-[32px] text-[#D0D0CA] block mb-2">🖼</span>
-                            <span className="text-[12px] font-bold text-[#6B7280]">Click to upload logo</span>
+                            <span className="text-[12px] font-bold text-[#6B7280]">{isEditing ? 'Click to upload logo' : 'No logo uploaded'}</span>
                           </div>
                         )}
                         <input type="file" ref={logoInputRef} className="hidden" onChange={e=>handleFileChange(e, 'logoUrl')}/>
@@ -246,15 +249,15 @@ const Settings = () => {
                     <div className="flex-1 space-y-3">
                       <label className="settings-label text-[11px] font-bold uppercase tracking-[0.15em] text-[#6B7280]">Authorized Signature</label>
                       <div 
-                        onClick={() => signatureInputRef.current.click()}
-                        className="upload-zone w-full h-[180px] rounded-[5px] border-2 border-dashed flex flex-col items-center justify-center transition-all overflow-hidden cursor-pointer border-[#E4E4E0] hover:border-[#95BF47] hover:bg-[#F3F8E8]"
+                        onClick={() => isEditing && signatureInputRef.current.click()}
+                        className={`upload-zone w-full h-[180px] rounded-[5px] border-2 border-dashed flex flex-col items-center justify-center transition-all overflow-hidden ${isEditing ? 'cursor-pointer border-[#E4E4E0] hover:border-[#95BF47] hover:bg-[#F3F8E8]' : 'cursor-default border-[#F3F4F6]'}`}
                       >
                         {settings.signatureUrl ? (
                           <img src={settings.signatureUrl} className="w-full h-full object-contain p-4" alt="Signature"/>
                         ) : (
                           <div className="text-center">
                             <span className="text-[32px] text-[#D0D0CA] block mb-2">✒</span>
-                            <span className="text-[12px] font-bold text-[#6B7280]">Click to upload signature</span>
+                            <span className="text-[12px] font-bold text-[#6B7280]">{isEditing ? 'Click to upload signature' : 'No signature uploaded'}</span>
                           </div>
                         )}
                         <input type="file" ref={signatureInputRef} className="hidden" onChange={e=>handleFileChange(e, 'signatureUrl')}/>
@@ -296,6 +299,76 @@ const Settings = () => {
                   <DataField label="IFSC Code" value={settings.ifscCode} field="ifscCode" isEditing={isEditing} settings={settings} setSettings={setSettings} />
                   <DataField label="IBAN Number" value={settings.iban} field="iban" isEditing={isEditing} settings={settings} setSettings={setSettings} />
                   <DataField label="SWIFT Code" value={settings.swiftCode} field="swiftCode" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                </div>
+              </div>
+
+              {/* Terms & Conditions */}
+              <div ref={sectionRefs['Terms & Conditions']} className="bg-white rounded-[12px] border border-[#E4E4E0] shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-[#FAFAF8] bg-[#FAFAF8]/50 flex items-center gap-4">
+                  <div className="w-10 h-10 bg-white rounded-lg shadow-sm border border-[#E4E4E0] flex items-center justify-center text-[18px]">📝</div>
+                  <div>
+                    <h2 className="text-[16px] font-bold text-[#0C0E10] font-heading">Terms & Conditions</h2>
+                    <span className="text-[11px] text-[#6B7280] font-medium">Standard terms displayed on your invoices</span>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-4">
+                    {(settings.termsAndConditions || []).map((term, index) => (
+                      <div key={term.id || index} className="flex items-start gap-3 group/term">
+                        <div className="flex-1">
+                          {isEditing ? (
+                            <textarea
+                              className="w-full min-w-0 border border-[#E4E4E0] rounded-[5px] px-3 py-2 text-sm font-medium outline-none transition-all focus:border-[#95BF47] focus:ring-4 focus:ring-[#95BF47]/10 bg-white min-h-[80px] resize-none"
+                              value={term.text || ''}
+                              onChange={(e) => {
+                                const newTerms = [...settings.termsAndConditions];
+                                newTerms[index].text = e.target.value;
+                                setSettings({ ...settings, termsAndConditions: newTerms });
+                              }}
+                              placeholder={`Term #${index + 1}`}
+                            />
+                          ) : (
+                            <div className="flex items-start gap-2 group/text">
+                              <span className="text-[14px] font-bold text-[#95BF47] mt-1">{index + 1}.</span>
+                              <p className="text-[14px] font-medium text-[#0C0E10] leading-relaxed">
+                                {term.text || <span className="text-[#D0D0CA] font-normal italic">No text</span>}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        {isEditing && (
+                          <button
+                            onClick={() => {
+                              const newTerms = settings.termsAndConditions.filter((_, i) => i !== index);
+                              setSettings({ ...settings, termsAndConditions: newTerms });
+                            }}
+                            className="p-2 text-[#D0D0CA] hover:text-red-500 hover:bg-red-50 transition-all rounded-[6px]"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+
+                    {isEditing && (
+                      <button
+                        onClick={() => {
+                          const newTerms = [...(settings.termsAndConditions || []), { id: Date.now(), text: '' }];
+                          setSettings({ ...settings, termsAndConditions: newTerms });
+                        }}
+                        className="flex items-center gap-2 text-[#95BF47] text-[14px] font-bold hover:bg-[#F3F8E8] px-4 py-2 rounded-[8px] transition-all border border-dashed border-[#95BF47]/30"
+                      >
+                        <Plus size={16} />
+                        Add New Term
+                      </button>
+                    )}
+
+                    {!isEditing && (!settings.termsAndConditions || settings.termsAndConditions.length === 0) && (
+                      <div className="p-8 text-center bg-[#FAFAF8] rounded-[12px] border border-dashed border-[#E4E4E0]">
+                        <p className="text-[13px] font-medium text-[#6B7280]">No terms and conditions added yet.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

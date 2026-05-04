@@ -17,6 +17,10 @@ const protect = async (req, res, next) => {
       if (!req.user) {
         return res.status(401).json({ message: 'User not found' });
       }
+
+      if (!req.user.isActive) {
+        return res.status(401).json({ message: 'Account is deactivated' });
+      }
       
       next();
     } catch (error) {
@@ -29,4 +33,12 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const protectAdmin = async (req, res, next) => {
+  if (req.user && req.user.isAdmin) {
+    next();
+  } else {
+    res.status(401).json({ message: 'Not authorized as an admin' });
+  }
+};
+
+module.exports = { protect, protectAdmin };

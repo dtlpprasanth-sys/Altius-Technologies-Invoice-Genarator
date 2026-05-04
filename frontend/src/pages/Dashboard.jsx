@@ -12,6 +12,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [timeRange, setTimeRange] = useState('6M');
   const [invoices, setInvoices] = useState([]);
   const [stats, setStats] = useState({ 
     totalCount: 0, 
@@ -22,12 +23,14 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState([]);
+  const [allInvoices, setAllInvoices] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const { data } = await invoiceApi.getAll({ limit: 500 });
         const inv = Array.isArray(data) ? data : (data.invoices || []);
+        setAllInvoices(inv);
         
         const drafts    = inv.filter(i => i.status?.toLowerCase() === 'draft');
         const submitted = inv.filter(i => i.status?.toLowerCase() === 'sent');
@@ -44,34 +47,6 @@ const Dashboard = () => {
         });
 
         setInvoices(inv.slice(0, 5));
-
-        // Real Monthly Revenue Calculation
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const currentYear = new Date().getFullYear();
-        const last6Months = [];
-        for (let i = 5; i >= 0; i--) {
-          const d = new Date();
-          d.setMonth(d.getMonth() - i);
-          last6Months.push({
-            month: d.getMonth(),
-            year: d.getFullYear(),
-            name: monthNames[d.getMonth()],
-            revenue: 0
-          });
-        }
-
-        inv.forEach(i => {
-          const idate = new Date(i.invoiceDate);
-          const imonth = idate.getMonth();
-          const iyear = idate.getFullYear();
-          const target = last6Months.find(m => m.month === imonth && m.year === iyear);
-          if (target && i.status?.toLowerCase() === 'sent') {
-            target.revenue += (i.total || 0);
-          }
-        });
-
-        setChartData(last6Months.map(m => ({ name: m.name, revenue: m.revenue })));
-
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
       } finally {
@@ -79,7 +54,50 @@ const Dashboard = () => {
       }
     };
     fetchData();
+
+    // Synchronization: Refresh data when window gets focus (e.g. user switches back to tab)
+    const handleFocus = () => fetchData();
+    window.addEventListener('focus', handleFocus);
+
+    // Synchronization: Background polling every 30 seconds
+    const interval = setInterval(fetchData, 30000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
   }, []);
+
+  useEffect(() => {
+    if (allInvoices.length === 0) return;
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const rangeCount = timeRange === '3M' ? 3 : timeRange === '6M' ? 6 : 12;
+    const dataPoints = [];
+
+    for (let i = rangeCount - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      dataPoints.push({
+        month: d.getMonth(),
+        year: d.getFullYear(),
+        name: monthNames[d.getMonth()],
+        revenue: 0
+      });
+    }
+
+    allInvoices.forEach(i => {
+      const idate = new Date(i.invoiceDate);
+      const imonth = idate.getMonth();
+      const iyear = idate.getFullYear();
+      const target = dataPoints.find(m => m.month === imonth && m.year === iyear);
+      if (target && i.status?.toLowerCase() === 'sent') {
+        target.revenue += (i.total || 0);
+      }
+    });
+
+    setChartData(dataPoints.map(m => ({ name: m.name, revenue: m.revenue })));
+  }, [allInvoices, timeRange]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-[#FAFAF8]">
@@ -138,7 +156,11 @@ const Dashboard = () => {
                 <h3 className="text-[18px] font-bold text-[#0C0E10] font-heading">Revenue Overview</h3>
                 <div className="flex gap-4">
                   {['3M', '6M', '1Y'].map(tab => (
-                    <button key={tab} className={`text-[12px] font-bold pb-1 border-b-2 transition-all ${tab === '3M' ? 'text-[#0C0E10] border-[#95BF47]' : 'text-[#6B7280] border-transparent hover:text-[#0C0E10]'}`}>
+                    <button 
+                      key={tab} 
+                      onClick={() => setTimeRange(tab)}
+                      className={`text-[12px] font-bold pb-1 border-b-2 transition-all ${timeRange === tab ? 'text-[#0C0E10] border-[#95BF47]' : 'text-[#6B7280] border-transparent hover:text-[#0C0E10]'}`}
+                    >
                       {tab}
                     </button>
                   ))}

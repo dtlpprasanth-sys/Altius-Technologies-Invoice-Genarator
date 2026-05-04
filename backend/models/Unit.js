@@ -9,13 +9,19 @@ const Unit = sequelize.define('Unit', {
   },
   name: {
     type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
+    allowNull: false
   },
   userId: {
     type: DataTypes.UUID,
     allowNull: false
   }
+}, {
+  indexes: [
+    {
+      unique: true,
+      fields: ['name', 'userId']
+    }
+  ]
 });
 
 module.exports = Unit;

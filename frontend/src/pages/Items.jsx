@@ -33,7 +33,21 @@ const Items = () => {
     }
   };
 
-  useEffect(() => { fetchItems(); }, []);
+  useEffect(() => { 
+    fetchItems(); 
+
+    // Synchronization: Refresh on focus
+    const handleFocus = () => fetchItems();
+    window.addEventListener('focus', handleFocus);
+
+    // Synchronization: Polling (15s)
+    const interval = setInterval(fetchItems, 15000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
+  }, []);
 
   const openCreate = () => {
     setEditingItem(null);

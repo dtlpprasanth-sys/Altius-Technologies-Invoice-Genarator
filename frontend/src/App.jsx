@@ -16,6 +16,9 @@ import InvoiceDetail from './pages/InvoiceDetail';
 import Clients from './pages/Clients';
 import Items from './pages/Items';
 import Settings from './pages/Settings';
+import AdminLogin from './pages/AdminLogin';
+import ManageAdmins from './pages/ManageAdmins';
+import AdminProtectedRoute from './components/AdminProtectedRoute';
 
 const App = () => {
   return (
@@ -25,6 +28,7 @@ const App = () => {
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
 
           {/* Protected routes */}
           <Route
@@ -44,6 +48,11 @@ const App = () => {
             <Route path="clients" element={<Clients />} />
             <Route path="items" element={<Items />} />
             <Route path="settings" element={<Settings />} />
+            
+            {/* Admin only sub-routes */}
+            <Route path="admin" element={<AdminProtectedRoute />}>
+              <Route path="dashboard" element={<ManageAdmins />} />
+            </Route>
           </Route>
 
           {/* Fallback */}

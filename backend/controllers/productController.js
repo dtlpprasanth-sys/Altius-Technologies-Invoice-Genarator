@@ -4,7 +4,7 @@ const Product = require('../models/Product');
 // @route GET /api/products
 const getProducts = async (req, res) => {
   try {
-    const products = await Product.findAll({ where: { userId: req.user.id } });
+    const products = await Product.findAll();
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -24,7 +24,7 @@ const createProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   try {
-    const product = await Product.findOne({ where: { id: req.params.id, userId: req.user.id } });
+    const product = await Product.findOne({ where: { id: req.params.id } });
     if (!product) return res.status(404).json({ message: 'Product not found' });
     await product.update(req.body);
     res.json(product);
@@ -35,7 +35,7 @@ const updateProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findOne({ where: { id: req.params.id, userId: req.user.id } });
+    const product = await Product.findOne({ where: { id: req.params.id } });
     if (!product) return res.status(404).json({ message: 'Product not found' });
     await product.destroy();
     res.json({ message: 'Product removed' });
