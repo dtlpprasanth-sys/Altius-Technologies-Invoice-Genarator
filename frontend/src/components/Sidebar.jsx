@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, FileText, Users, LogOut, Zap, 
-  ChevronLeft, ChevronRight, Box, Settings
+  ChevronLeft, ChevronRight, Box, User
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -16,7 +16,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { to: '/invoices', icon: FileText, label: 'Invoices', id: 'invoices', badge: true },
     { to: '/clients', icon: Users, label: 'Clients', id: 'clients' },
     { to: '/items', icon: Box, label: 'Item Master', id: 'items' },
-    { to: '/settings', icon: Settings, label: 'Settings', id: 'settings' },
+    { to: '/settings', icon: User, label: 'Profile', id: 'settings' },
   ];
 
   const isActive = (to) => {
