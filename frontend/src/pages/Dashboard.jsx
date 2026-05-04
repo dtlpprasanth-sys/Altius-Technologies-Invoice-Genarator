@@ -110,12 +110,10 @@ const Dashboard = () => {
           <div className="flex-1 p-5 px-6">
             <div className="kpi-label">Total Invoices</div>
             <div className="kpi-value">{stats.totalCount}</div>
-            <div className="text-[12px] text-[#95BF47] font-bold mt-1.5 flex items-center gap-1">↑ 12% from last month</div>
           </div>
           <div className="flex-1 p-5 px-6">
             <div className="kpi-label">Total Revenue</div>
             <div className="kpi-value">{formatCurrency(stats.totalRevenue)}</div>
-            <div className="text-[12px] text-[#95BF47] font-bold mt-1.5 flex items-center gap-1">↑ 8% from last month</div>
           </div>
           <div className="flex-1 p-5 px-6">
             <div className="kpi-label">Draft Invoices</div>

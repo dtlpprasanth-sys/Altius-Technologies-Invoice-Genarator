@@ -16,7 +16,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { to: '/invoices', icon: FileText, label: 'Invoices', id: 'invoices', badge: true },
     { to: '/clients', icon: Users, label: 'Clients', id: 'clients' },
     { to: '/items', icon: Box, label: 'Item Master', id: 'items' },
-    { to: '/settings', icon: Settings, label: 'Profile', id: 'profile' },
+    { to: '/settings', icon: Settings, label: 'Settings', id: 'settings' },
   ];
 
   const isActive = (to) => {
@@ -32,7 +32,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Logo Area */}
       <div className="sidebar-logo">
         <Zap className="bolt" size={18} fill="currentColor" />
-        <span className="sidebar-logo-text">Nxt Invoice</span>
+        <span className="sidebar-logo-text uppercase tracking-wider">InvoiceFlow</span>
       </div>
       <div className="sidebar-accent"></div>
 
@@ -51,36 +51,29 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           </Link>
         ))}
 
-        {/* Flexible space */}
-        <div className="flex-1"></div>
-
-        {/* Logout Item (Inside nav for consistency) */}
-        <div 
-          className="nav-item mt-auto" 
-          onClick={logout}
-          style={{ cursor: 'pointer', borderLeft: 'none' }}
-          onMouseEnter={() => !isOpen && setHoveredItem({ label: 'Logout' })}
-        >
-          <LogOut size={18} className="nav-icon text-rose-400" />
-          <span className="nav-label text-rose-400">Logout</span>
-        </div>
       </div>
 
       {/* Sidebar Bottom */}
       <div className="sidebar-bottom">
-        <div className="sidebar-user">
-          <div className="user-avatar">
+        <div className="sidebar-user mb-2">
+          <div className="user-avatar bg-[#95BF47] text-white">
             {user?.name?.charAt(0)?.toUpperCase() || 'P'}
           </div>
-          <span className="user-name">{user?.name || 'Praba'}</span>
+          <span className="user-name font-bold text-white/90">{user?.name || 'Praba'}</span>
         </div>
         
         <div 
-          className="sidebar-toggle" 
+          className="sidebar-toggle hover:bg-white/5" 
           onClick={() => setIsOpen(!isOpen)}
-          title={isOpen ? "Collapse Sidebar" : "Expand Sidebar"}
         >
-          {isOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+          {isOpen ? (
+            <div className="flex items-center gap-2 w-full px-2">
+              <ChevronLeft size={16} />
+              <span className="text-[13px] font-medium">Collapse</span>
+            </div>
+          ) : (
+            <ChevronRight size={18} />
+          )}
         </div>
       </div>
 

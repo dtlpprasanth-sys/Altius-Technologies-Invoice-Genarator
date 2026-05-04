@@ -114,58 +114,16 @@ const Settings = () => {
   );
 
   return (
-    <div className="flex h-screen bg-[#FAFAF8] overflow-hidden">
-      {/* Sidebar Navigation */}
-      <div className="w-[300px] border-r border-[#E4E4E0] bg-white flex flex-col p-6">
-        <div className="mb-8">
-          <h1 className="text-[24px] font-bold text-[#0C0E10] font-heading">Organization Details</h1>
-          <p className="text-[13px] text-[#6B7280] mt-1 font-medium">Manage your business profile and invoice defaults</p>
-        </div>
-
-        <div className="space-y-1.5 flex-1 overflow-y-auto custom-scrollbar pr-2">
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => scrollToSection(item.id)}
-              className={`w-full flex items-center justify-between px-4 py-3.5 rounded-[8px] transition-all group ${
-                activeTab === item.id 
-                ? 'bg-[#F3F8E8] text-[#95BF47] border border-[#95BF47]/20 shadow-sm' 
-                : 'text-[#6B7280] hover:bg-[#FAFAF8] hover:text-[#0C0E10] border border-transparent'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className={`p-2 rounded-lg transition-all ${
-                  activeTab === item.id ? 'bg-white shadow-sm text-[#95BF47]' : 'text-[#D0D0CA] group-hover:text-[#6B7280]'
-                }`}>
-                  {item.icon}
-                </span>
-                <span className="text-[14px] font-bold tracking-tight">{item.id}</span>
-              </div>
-              <ChevronRight size={16} className={`transition-transform duration-300 ${activeTab === item.id ? 'rotate-90 text-[#95BF47]' : 'text-[#D0D0CA]'}`} />
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-6 pt-6 border-t border-[#E4E4E0]">
-          <div className="bg-[#02172E] rounded-[10px] p-4 text-white">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 bg-[#95BF47] rounded-full flex items-center justify-center text-[14px] font-bold">P</div>
-              <div className="flex-1">
-                <p className="text-[12px] font-bold opacity-70">Professional Account</p>
-                <p className="text-[13px] font-bold">Active Status</p>
-              </div>
-            </div>
-            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-              <div className="w-[85%] h-full bg-[#95BF47]"></div>
-            </div>
+    <div className="min-h-screen bg-[#FAFAF8]">
+      <div className="max-w-[1200px] mx-auto py-8 px-8">
+        {/* Header Section */}
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h1 className="text-[32px] font-bold text-[#0C0E10] font-heading">Organization Details</h1>
+            <p className="text-[14px] text-[#6B7280] mt-1 font-medium">Manage your business profile and invoice defaults</p>
           </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#FAFAF8]">
-        <div className="max-w-[900px] mx-auto py-12 px-8">
-          <div className="flex justify-end mb-8 sticky top-0 z-10 py-2">
+          
+          <div className="sticky top-6 z-10">
             {!isEditing ? (
               <button 
                 onClick={() => setIsEditing(true)}
@@ -192,118 +150,152 @@ const Settings = () => {
               </div>
             )}
           </div>
+        </div>
 
-          <div className="space-y-10">
-            {/* Business Profile */}
-            <div ref={sectionRefs['Business Profile']} className="bg-white rounded-[15px] border border-[#E4E4E0] shadow-sm overflow-hidden">
-              <div className="p-8 border-b border-[#FAFAF8] bg-[#FAFAF8]/50 flex items-center gap-4">
-                <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-[#E4E4E0] flex items-center justify-center text-[20px]">🏢</div>
-                <div>
-                  <h2 className="text-[18px] font-bold text-[#0C0E10] font-heading">Business Profile</h2>
-                  <span className="text-[12px] text-[#6B7280] font-medium">Your core business identity</span>
-                </div>
-              </div>
-              <div className="p-8 grid grid-cols-2 gap-x-12 gap-y-8">
-                <DataField label="Business Legal Name" value={settings.businessName} field="businessName" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="Email Address" value={settings.email} field="email" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="Phone Number" value={settings.phone} field="phone" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="Telephone No" value={settings.telephone} field="telephone" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="Business Website" value={settings.website} field="website" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="Street Address Display" value={settings.address} field="address" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="City" value={settings.city} field="city" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="Postal Code" value={settings.pincode} field="pincode" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="State / UT" value={settings.state} field="state" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="Country" value={settings.country} field="country" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="GSTIN" value={settings.gstin} field="gstin" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="PAN Number" value={settings.pan} field="pan" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="IE Code" value={settings.ieCode} field="ieCode" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="CIN Number" value={settings.cin} field="cin" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="LUT Details" value={settings.lutDetails} field="lutDetails" type="textarea" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
+        <div className="flex gap-6 items-start">
+          {/* Compact Sticky Sidebar Card */}
+          <div className="w-[280px] shrink-0 sticky top-12">
+            <div className="bg-white border border-[#E4E4E0] rounded-[15px] p-2 shadow-sm">
+              <div className="space-y-1">
+                {menuItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => scrollToSection(item.id)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-[8px] transition-all group border-l-4 ${
+                      activeTab === item.id 
+                      ? 'bg-[#F3F8E8] text-[#95BF47] border-[#95BF47]' 
+                      : 'text-[#6B7280] hover:bg-[#FAFAF8] hover:text-[#0C0E10] border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`p-1.5 rounded-lg transition-all ${
+                        activeTab === item.id ? 'bg-white shadow-sm text-[#95BF47]' : 'text-[#D0D0CA] group-hover:text-[#6B7280]'
+                      }`}>
+                        {item.icon}
+                      </span>
+                      <span className="text-[14px] font-bold tracking-tight">{item.id}</span>
+                    </div>
+                    <ChevronRight size={16} className={`transition-transform duration-300 ${activeTab === item.id ? 'rotate-90 text-[#95BF47]' : 'text-[#D0D0CA]'}`} />
+                  </button>
+                ))}
               </div>
             </div>
+          </div>
 
-            {/* Branding & Identity */}
-            <div ref={sectionRefs['Branding & Identity']} className="bg-white rounded-[15px] border border-[#E4E4E0] shadow-sm overflow-hidden">
-              <div className="p-8 border-b border-[#FAFAF8] bg-[#FAFAF8]/50 flex items-center gap-4">
-                <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-[#E4E4E0] flex items-center justify-center text-[20px]">🎨</div>
-                <div>
-                  <h2 className="text-[18px] font-bold text-[#0C0E10] font-heading">Branding & Identity</h2>
-                  <span className="text-[12px] text-[#6B7280] font-medium">Logos and signatures for your invoices</span>
-                </div>
-              </div>
-              <div className="p-8">
-              <div className="flex gap-10">
-                <div className="flex-1 space-y-3">
-                  <label className="settings-label text-[11px] font-bold uppercase tracking-[0.15em] text-[#6B7280]">Company Logo</label>
-                  <div 
-                    onClick={() => logoInputRef.current.click()}
-                    className="upload-zone w-full h-[180px] rounded-[5px] border-2 border-dashed flex flex-col items-center justify-center transition-all overflow-hidden cursor-pointer border-[#E4E4E0] hover:border-[#95BF47] hover:bg-[#F3F8E8]"
-                  >
-                    {settings.logoUrl ? (
-                      <img src={settings.logoUrl} className="w-full h-full object-contain p-4" alt="Logo"/>
-                    ) : (
-                      <div className="text-center">
-                        <span className="text-[32px] text-[#D0D0CA] block mb-2">🖼</span>
-                        <span className="text-[12px] font-bold text-[#6B7280]">Click to upload logo</span>
-                      </div>
-                    )}
-                    <input type="file" ref={logoInputRef} className="hidden" onChange={e=>handleFileChange(e, 'logoUrl')}/>
+          {/* Settings Sections Container */}
+          <div className="flex-1">
+            <div className="space-y-6">
+              {/* Business Profile */}
+              <div ref={sectionRefs['Business Profile']} className="bg-white rounded-[12px] border border-[#E4E4E0] shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-[#FAFAF8] bg-[#FAFAF8]/50 flex items-center gap-4">
+                  <div className="w-10 h-10 bg-white rounded-lg shadow-sm border border-[#E4E4E0] flex items-center justify-center text-[18px]">🏢</div>
+                  <div>
+                    <h2 className="text-[16px] font-bold text-[#0C0E10] font-heading">Business Profile</h2>
+                    <span className="text-[11px] text-[#6B7280] font-medium">Your core business identity</span>
                   </div>
                 </div>
+                <div className="p-6 grid grid-cols-2 gap-x-10 gap-y-6">
+                  <DataField label="Business Legal Name" value={settings.businessName} field="businessName" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="Email Address" value={settings.email} field="email" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="Phone Number" value={settings.phone} field="phone" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="Telephone No" value={settings.telephone} field="telephone" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="Business Website" value={settings.website} field="website" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="Street Address Display" value={settings.address} field="address" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="City" value={settings.city} field="city" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="Postal Code" value={settings.pincode} field="pincode" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="State / UT" value={settings.state} field="state" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="Country" value={settings.country} field="country" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="GSTIN" value={settings.gstin} field="gstin" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="PAN Number" value={settings.pan} field="pan" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="IE Code" value={settings.ieCode} field="ieCode" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="CIN Number" value={settings.cin} field="cin" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="LUT Details" value={settings.lutDetails} field="lutDetails" type="textarea" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                </div>
+              </div>
 
-                <div className="flex-1 space-y-3">
-                  <label className="settings-label text-[11px] font-bold uppercase tracking-[0.15em] text-[#6B7280]">Authorized Signature</label>
-                  <div 
-                    onClick={() => signatureInputRef.current.click()}
-                    className="upload-zone w-full h-[180px] rounded-[5px] border-2 border-dashed flex flex-col items-center justify-center transition-all overflow-hidden cursor-pointer border-[#E4E4E0] hover:border-[#95BF47] hover:bg-[#F3F8E8]"
-                  >
-                    {settings.signatureUrl ? (
-                      <img src={settings.signatureUrl} className="w-full h-full object-contain p-4" alt="Signature"/>
-                    ) : (
-                      <div className="text-center">
-                        <span className="text-[32px] text-[#D0D0CA] block mb-2">✒</span>
-                        <span className="text-[12px] font-bold text-[#6B7280]">Click to upload signature</span>
+              {/* Branding & Identity */}
+              <div ref={sectionRefs['Branding & Identity']} className="bg-white rounded-[12px] border border-[#E4E4E0] shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-[#FAFAF8] bg-[#FAFAF8]/50 flex items-center gap-4">
+                  <div className="w-10 h-10 bg-white rounded-lg shadow-sm border border-[#E4E4E0] flex items-center justify-center text-[18px]">🎨</div>
+                  <div>
+                    <h2 className="text-[16px] font-bold text-[#0C0E10] font-heading">Branding & Identity</h2>
+                    <span className="text-[11px] text-[#6B7280] font-medium">Logos and signatures for your invoices</span>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="flex gap-8">
+                    <div className="flex-1 space-y-3">
+                      <label className="settings-label text-[11px] font-bold uppercase tracking-[0.15em] text-[#6B7280]">Company Logo</label>
+                      <div 
+                        onClick={() => logoInputRef.current.click()}
+                        className="upload-zone w-full h-[180px] rounded-[5px] border-2 border-dashed flex flex-col items-center justify-center transition-all overflow-hidden cursor-pointer border-[#E4E4E0] hover:border-[#95BF47] hover:bg-[#F3F8E8]"
+                      >
+                        {settings.logoUrl ? (
+                          <img src={settings.logoUrl} className="w-full h-full object-contain p-4" alt="Logo"/>
+                        ) : (
+                          <div className="text-center">
+                            <span className="text-[32px] text-[#D0D0CA] block mb-2">🖼</span>
+                            <span className="text-[12px] font-bold text-[#6B7280]">Click to upload logo</span>
+                          </div>
+                        )}
+                        <input type="file" ref={logoInputRef} className="hidden" onChange={e=>handleFileChange(e, 'logoUrl')}/>
                       </div>
-                    )}
-                    <input type="file" ref={signatureInputRef} className="hidden" onChange={e=>handleFileChange(e, 'signatureUrl')}/>
+                    </div>
+
+                    <div className="flex-1 space-y-3">
+                      <label className="settings-label text-[11px] font-bold uppercase tracking-[0.15em] text-[#6B7280]">Authorized Signature</label>
+                      <div 
+                        onClick={() => signatureInputRef.current.click()}
+                        className="upload-zone w-full h-[180px] rounded-[5px] border-2 border-dashed flex flex-col items-center justify-center transition-all overflow-hidden cursor-pointer border-[#E4E4E0] hover:border-[#95BF47] hover:bg-[#F3F8E8]"
+                      >
+                        {settings.signatureUrl ? (
+                          <img src={settings.signatureUrl} className="w-full h-full object-contain p-4" alt="Signature"/>
+                        ) : (
+                          <div className="text-center">
+                            <span className="text-[32px] text-[#D0D0CA] block mb-2">✒</span>
+                            <span className="text-[12px] font-bold text-[#6B7280]">Click to upload signature</span>
+                          </div>
+                        )}
+                        <input type="file" ref={signatureInputRef} className="hidden" onChange={e=>handleFileChange(e, 'signatureUrl')}/>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-              </div>
-            </div>
 
-            {/* Invoice Defaults */}
-            <div ref={sectionRefs['Invoice Defaults']} className="bg-white rounded-[15px] border border-[#E4E4E0] shadow-sm overflow-hidden">
-              <div className="p-8 border-b border-[#FAFAF8] bg-[#FAFAF8]/50 flex items-center gap-4">
-                <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-[#E4E4E0] flex items-center justify-center text-[20px]">#</div>
-                <div>
-                  <h2 className="text-[18px] font-bold text-[#0C0E10] font-heading">Invoice Defaults</h2>
-                  <span className="text-[12px] text-[#6B7280] font-medium">Standard numbering and prefixes</span>
+              {/* Invoice Defaults */}
+              <div ref={sectionRefs['Invoice Defaults']} className="bg-white rounded-[12px] border border-[#E4E4E0] shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-[#FAFAF8] bg-[#FAFAF8]/50 flex items-center gap-4">
+                  <div className="w-10 h-10 bg-white rounded-lg shadow-sm border border-[#E4E4E0] flex items-center justify-center text-[18px]">#</div>
+                  <div>
+                    <h2 className="text-[16px] font-bold text-[#0C0E10] font-heading">Invoice Defaults</h2>
+                    <span className="text-[11px] text-[#6B7280] font-medium">Standard numbering and prefixes</span>
+                  </div>
+                </div>
+                <div className="p-6 grid grid-cols-2 gap-x-10 gap-y-6">
+                  <DataField label="Invoice Prefix" value={settings.invoicePrefix} field="invoicePrefix" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="Starting Number" value={settings.invoiceCounter} field="invoiceCounter" type="text" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="Fiscal Year" value={settings.fiscalYear} field="fiscalYear" placeholder="e.g. 2025-26" isEditing={isEditing} settings={settings} setSettings={setSettings} />
                 </div>
               </div>
-              <div className="p-8 grid grid-cols-2 gap-x-12 gap-y-8">
-                <DataField label="Invoice Prefix" value={settings.invoicePrefix} field="invoicePrefix" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="Starting Number" value={settings.invoiceCounter} field="invoiceCounter" type="text" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="Fiscal Year" value={settings.fiscalYear} field="fiscalYear" placeholder="e.g. 2025-26" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-              </div>
-            </div>
 
-            {/* Bank Details */}
-            <div ref={sectionRefs['Bank Details']} className="bg-white rounded-[15px] border border-[#E4E4E0] shadow-sm overflow-hidden">
-              <div className="p-8 border-b border-[#FAFAF8] bg-[#FAFAF8]/50 flex items-center gap-4">
-                <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-[#E4E4E0] flex items-center justify-center text-[20px]">🏦</div>
-                <div>
-                  <h2 className="text-[18px] font-bold text-[#0C0E10] font-heading">Bank Details</h2>
-                  <span className="text-[12px] text-[#6B7280] font-medium">Standard numbering and prefixes</span>
+              {/* Bank Details */}
+              <div ref={sectionRefs['Bank Details']} className="bg-white rounded-[12px] border border-[#E4E4E0] shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-[#FAFAF8] bg-[#FAFAF8]/50 flex items-center gap-4">
+                  <div className="w-10 h-10 bg-white rounded-lg shadow-sm border border-[#E4E4E0] flex items-center justify-center text-[18px]">🏦</div>
+                  <div>
+                    <h2 className="text-[16px] font-bold text-[#0C0E10] font-heading">Bank Details</h2>
+                    <span className="text-[11px] text-[#6B7280] font-medium">Standard numbering and prefixes</span>
+                  </div>
                 </div>
-              </div>
-              <div className="p-8 grid grid-cols-2 gap-x-12 gap-y-8">
-                <DataField label="Bank Name" value={settings.bankName} field="bankName" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="Account Holder Name" value={settings.accountName} field="accountName" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="Account Number" value={settings.accountNumber} field="accountNumber" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="IFSC Code" value={settings.ifscCode} field="ifscCode" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="IBAN Number" value={settings.iban} field="iban" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                <DataField label="SWIFT Code" value={settings.swiftCode} field="swiftCode" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                <div className="p-6 grid grid-cols-2 gap-x-10 gap-y-6">
+                  <DataField label="Bank Name" value={settings.bankName} field="bankName" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="Account Holder Name" value={settings.accountName} field="accountName" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="Account Number" value={settings.accountNumber} field="accountNumber" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="IFSC Code" value={settings.ifscCode} field="ifscCode" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="IBAN Number" value={settings.iban} field="iban" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="SWIFT Code" value={settings.swiftCode} field="swiftCode" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                </div>
               </div>
             </div>
           </div>
