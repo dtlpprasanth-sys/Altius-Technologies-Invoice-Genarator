@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { invoiceApi } from '../services/api';
+import { invoiceApi, settingsApi } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import {
   TrendingUp, Plus, Search, Bell, ArrowRight, 
@@ -13,41 +13,62 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 const Dashboard = () => {
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState('6M');
+  const [selectedYear, setSelectedYear] = useState('All');
+  const [selectedMonth, setSelectedMonth] = useState('All');
   const [invoices, setInvoices] = useState([]);
-  const [stats, setStats] = useState({ 
-    totalCount: 0, 
-    draftCount: 0, 
-    submittedCount: 0,
-    totalRevenue: 0, 
-    pendingAmount: 0
-  });
   const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState([]);
   const [allInvoices, setAllInvoices] = useState([]);
+  const [settings, setSettings] = useState({});
+
+  // Extract available years for the filter
+  const availableYears = React.useMemo(() => {
+    const years = new Set();
+    allInvoices.forEach(inv => {
+      if (inv.invoiceDate) {
+        years.add(new Date(inv.invoiceDate).getFullYear().toString());
+      }
+    });
+    return ['All', ...Array.from(years).sort((a, b) => b - a)];
+  }, [allInvoices]);
+
+  const stats = React.useMemo(() => {
+    let filtered = [...allInvoices];
+    if (selectedYear !== 'All') {
+      filtered = filtered.filter(inv => new Date(inv.invoiceDate).getFullYear().toString() === selectedYear);
+    }
+    if (selectedMonth !== 'All') {
+      filtered = filtered.filter(inv => new Date(inv.invoiceDate).getMonth() === parseInt(selectedMonth));
+    }
+
+    const drafts    = filtered.filter(i => i.status?.toLowerCase() === 'draft');
+    const submitted = filtered.filter(i => i.status?.toLowerCase() === 'sent');
+    
+    const revenue  = submitted.reduce((s, i) => s + (Number(i.totalInINR) || 0), 0);
+    const pendAmt  = drafts.reduce((s, i) => s + (Number(i.totalInINR) || 0), 0);
+
+    return {
+      totalCount:     filtered.length,
+      draftCount:     drafts.length,
+      submittedCount: submitted.length,
+      totalRevenue:   revenue,
+      pendingAmount:  pendAmt
+    };
+  }, [allInvoices, selectedYear, selectedMonth]);
 
   useEffect(() => {
     const fetchData = async (silent = false) => {
       if (!silent) setLoading(true);
       try {
-        const { data } = await invoiceApi.getAll({ limit: 500 });
-        const inv = Array.isArray(data) ? data : (data.invoices || []);
+        const [invRes, setRes] = await Promise.all([
+          invoiceApi.getAll({ limit: 500 }),
+          settingsApi.get()
+        ]);
+
+        const inv = Array.isArray(invRes.data) ? invRes.data : (invRes.data.invoices || []);
         setAllInvoices(inv);
-        
-        const drafts    = inv.filter(i => i.status?.toLowerCase() === 'draft');
-        const submitted = inv.filter(i => i.status?.toLowerCase() === 'sent');
-        
-        const revenue  = submitted.reduce((s, i) => s + (i.total || 0), 0);
-        const pendAmt  = drafts.reduce((s, i) => s + (i.total || 0), 0);
-
-        setStats({
-          totalCount:     inv.length,
-          draftCount:     drafts.length,
-          submittedCount: submitted.length,
-          totalRevenue:   revenue,
-          pendingAmount:  pendAmt
-        });
-
         setInvoices(inv.slice(0, 5));
+        setSettings(setRes.data || {});
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
       } finally {
@@ -73,32 +94,53 @@ const Dashboard = () => {
     if (allInvoices.length === 0) return;
 
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const rangeCount = timeRange === '3M' ? 3 : timeRange === '6M' ? 6 : 12;
-    const dataPoints = [];
+    let dataPoints = [];
 
-    for (let i = rangeCount - 1; i >= 0; i--) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - i);
-      dataPoints.push({
-        month: d.getMonth(),
-        year: d.getFullYear(),
-        name: monthNames[d.getMonth()],
-        revenue: 0
-      });
+    if (selectedYear !== 'All') {
+      // Show all 12 months of the selected year
+      for (let i = 0; i < 12; i++) {
+        dataPoints.push({
+          month: i,
+          year: parseInt(selectedYear),
+          name: monthNames[i],
+          revenue: 0
+        });
+      }
+    } else {
+      // Standard time range logic
+      const rangeCount = timeRange === '3M' ? 3 : timeRange === '6M' ? 6 : 12;
+      for (let i = rangeCount - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        dataPoints.push({
+          month: d.getMonth(),
+          year: d.getFullYear(),
+          name: monthNames[d.getMonth()],
+          revenue: 0
+        });
+      }
     }
 
     allInvoices.forEach(i => {
       const idate = new Date(i.invoiceDate);
       const imonth = idate.getMonth();
       const iyear = idate.getFullYear();
+      
+      // Check if this invoice fits in our chart data points
       const target = dataPoints.find(m => m.month === imonth && m.year === iyear);
+      
       if (target && i.status?.toLowerCase() === 'sent') {
-        target.revenue += (i.total || 0);
+        // If a month is selected, we might want to only show that month, 
+        // but usually charts show the surrounding context. 
+        // For now, let's just sum it up if it matches.
+        if (selectedMonth === 'All' || imonth === parseInt(selectedMonth)) {
+          target.revenue += (Number(i.totalInINR) || 0);
+        }
       }
     });
 
     setChartData(dataPoints.map(m => ({ name: m.name, revenue: m.revenue })));
-  }, [allInvoices, timeRange]);
+  }, [allInvoices, timeRange, selectedYear, selectedMonth]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-[#FAFAF8]">
@@ -116,6 +158,25 @@ const Dashboard = () => {
           <p className="text-[13px] text-[#6B7280] mt-0.5 font-medium">Welcome back! Here's your overview.</p>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <select 
+              className="h-9 px-3 border border-[#E4E4E0] rounded-[5px] bg-white text-[13px] font-bold outline-none focus:border-[#95BF47] cursor-pointer"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+            >
+              {availableYears.map(year => <option key={year} value={year}>{year === 'All' ? 'All Years' : year}</option>)}
+            </select>
+            <select 
+              className="h-9 px-3 border border-[#E4E4E0] rounded-[5px] bg-white text-[13px] font-bold outline-none focus:border-[#95BF47] cursor-pointer"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+            >
+              <option value="All">All Months</option>
+              {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
+                <option key={m} value={i}>{m}</option>
+              ))}
+            </select>
+          </div>
           <Link to="/invoices/new" className="btn-green-sm ml-2 flex items-center gap-2 h-9 px-4 rounded-[5px] bg-[#95BF47] text-[#02172E] font-bold text-sm hover:bg-[#85AF37] transition-all">
             <Plus size={16} strokeWidth={3} /> New Invoice
           </Link>
@@ -127,22 +188,24 @@ const Dashboard = () => {
         {/* KPI BAND */}
         <div className="bg-white border border-[#E4E4E0] rounded-[5px] flex mb-6 shadow-sm overflow-hidden divide-x divide-[#E4E4E0]">
           <div className="flex-1 p-5 px-6">
-            <div className="kpi-label">Total Invoices</div>
-            <div className="kpi-value">{stats.totalCount}</div>
+            <div className="text-[11px] font-bold text-[#6B7280] uppercase tracking-[1.5px] mb-1">Total Invoices</div>
+            <div className="text-[28px] font-bold text-[#0C0E10] font-heading leading-tight">{stats.totalCount}</div>
+            <div className="text-[12px] text-[#6B7280] font-bold mt-1.5 flex items-center gap-1">All statuses</div>
           </div>
           <div className="flex-1 p-5 px-6">
-            <div className="kpi-label">Total Revenue</div>
-            <div className="kpi-value">{formatCurrency(stats.totalRevenue)}</div>
+            <div className="text-[11px] font-bold text-[#6B7280] uppercase tracking-[1.5px] mb-1">Total Revenue</div>
+            <div className="text-[28px] font-bold text-[#0C0E10] font-heading leading-tight">{formatCurrency(stats.totalRevenue, 'INR', settings.numberFormat, settings.decimals)}</div>
+            <div className="text-[12px] text-[#95BF47] font-bold mt-1.5 flex items-center gap-1">From sent invoices</div>
           </div>
           <div className="flex-1 p-5 px-6">
-            <div className="kpi-label">Draft Invoices</div>
-            <div className="kpi-value">{stats.draftCount}</div>
+            <div className="text-[11px] font-bold text-[#6B7280] uppercase tracking-[1.5px] mb-1">Draft Invoices</div>
+            <div className="text-[28px] font-bold text-[#0C0E10] font-heading leading-tight">{stats.draftCount}</div>
             <div className="text-[12px] text-[#D97706] font-bold mt-1.5 flex items-center gap-1">Pending submission</div>
           </div>
           <div className="flex-1 p-5 px-6">
-            <div className="kpi-label">Submitted Invoices</div>
-            <div className="kpi-value">{stats.submittedCount}</div>
-            <div className="text-[12px] text-[#95BF47] font-bold mt-1.5">Successfully submitted</div>
+            <div className="text-[11px] font-bold text-[#6B7280] uppercase tracking-[1.5px] mb-1">Submitted Invoices</div>
+            <div className="text-[28px] font-bold text-[#0C0E10] font-heading leading-tight">{stats.submittedCount}</div>
+            <div className="text-[12px] text-[#95BF47] font-bold mt-1.5 flex items-center gap-1">Successfully submitted</div>
           </div>
         </div>
 
@@ -232,8 +295,8 @@ const Dashboard = () => {
                       <tr key={inv.id} className="hover:bg-[#F3F8E8] transition-all group cursor-pointer" onClick={() => navigate(`/invoices/${inv.id}/edit`)}>
                         <td className="px-6 py-4 text-[14px] font-bold text-[#0C0E10]">{inv.invoiceNumber}</td>
                         <td className="px-6 py-4 text-[14px] text-[#0C0E10]">{inv.clientName}</td>
-                        <td className="px-6 py-4 text-[13px] text-[#6B7280]">{formatDate(inv.invoiceDate)}</td>
-                        <td className="px-6 py-4 text-[14px] font-bold text-right text-[#0C0E10]">{formatCurrency(inv.total, inv.currency)}</td>
+                        <td className="px-6 py-4 text-[13px] text-[#6B7280]">{formatDate(inv.invoiceDate, settings.numberFormat)}</td>
+                        <td className="px-6 py-4 text-[14px] font-bold text-right text-[#0C0E10]">{formatCurrency(inv.total, inv.currency, settings.numberFormat, settings.decimals)}</td>
                         <td className="px-6 py-4">
                           <span className={`status-badge ${
                             inv.status?.toLowerCase() === 'sent'  ? 'status-sent' :

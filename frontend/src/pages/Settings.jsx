@@ -44,7 +44,8 @@ const Settings = () => {
     gstin: '', pan: '', ieCode: '', cin: '', website: '', lutDetails: '',
     satelliteStation: '', bankName: '', accountName: '', accountNumber: '', 
     ifscCode: '', iban: '', swiftCode: '', invoicePrefix: 'INV', invoiceCounter: 1,
-    fiscalYear: '', logoUrl: '', signatureUrl: '', termsAndConditions: []
+    fiscalYear: '', logoUrl: '', signatureUrl: '', termsAndConditions: [],
+    numberFormat: 'en-US', decimals: 2
   });
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -280,6 +281,51 @@ const Settings = () => {
                   <DataField label="Invoice Prefix" value={settings.invoicePrefix} field="invoicePrefix" isEditing={isEditing} settings={settings} setSettings={setSettings} />
                   <DataField label="Starting Number" value={settings.invoiceCounter} field="invoiceCounter" type="text" isEditing={isEditing} settings={settings} setSettings={setSettings} />
                   <DataField label="Fiscal Year" value={settings.fiscalYear} field="fiscalYear" placeholder="e.g. 2025-26" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  
+                  <div className="settings-field space-y-1.5">
+                    <label className="settings-label text-[11px] font-bold uppercase tracking-[0.15em] text-[#6B7280] block mb-1">Number Format</label>
+                    {isEditing ? (
+                      <select 
+                        className="field-input w-full h-11 bg-[#FAFAF8] border border-[#E4E4E0] rounded-[5px] px-4 text-[14px] outline-none focus:border-[#95BF47]"
+                        value={settings.numberFormat || 'en-US'}
+                        onChange={e => setSettings({...settings, numberFormat: e.target.value})}
+                      >
+                        <option value="en-US">US/International (1,234.56)</option>
+                        <option value="en-IN">Indian (1,23,456.00)</option>
+                        <option value="de-DE">European (1.234,56)</option>
+                      </select>
+                    ) : (
+                      <div className="flex items-center group">
+                        <p className="text-[14px] font-bold text-[#0C0E10] py-1">
+                          {settings.numberFormat === 'en-IN' ? 'Indian (1,23,456.00)' : 
+                           settings.numberFormat === 'de-DE' ? 'European (1.234,56)' : 
+                           'US/International (1,234.56)'}
+                        </p>
+                      </div>
+                    )}
+                    <div className="settings-field space-y-1.5">
+                    <label className="settings-label text-[11px] font-bold uppercase tracking-[0.15em] text-[#6B7280] block mb-1">Decimal Precision</label>
+                    {isEditing ? (
+                      <select 
+                        className="field-input w-full h-11 bg-[#FAFAF8] border border-[#E4E4E0] rounded-[5px] px-4 text-[14px] outline-none focus:border-[#95BF47]"
+                        value={settings.decimals ?? 2}
+                        onChange={e => setSettings({...settings, decimals: parseInt(e.target.value)})}
+                      >
+                        <option value="0">0 (1234)</option>
+                        <option value="1">1 (1234.5)</option>
+                        <option value="2">2 (1234.56)</option>
+                        <option value="3">3 (1234.567)</option>
+                        <option value="4">4 (1234.5678)</option>
+                      </select>
+                    ) : (
+                      <div className="flex items-center group">
+                        <p className="text-[14px] font-bold text-[#0C0E10] py-1">
+                          {settings.decimals ?? 2} Decimal Places
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 </div>
               </div>
 

@@ -88,6 +88,8 @@ const Invoice = sequelize.define('Invoice', {
       template: 'modern'
     }
   },
+  numberFormat: { type: DataTypes.STRING, defaultValue: 'en-US' },
+  decimals: { type: DataTypes.INTEGER, defaultValue: 2 },
   
   auditTrail: { type: DataTypes.JSONB, defaultValue: [] }
 }, {

@@ -105,11 +105,13 @@ const InvoiceForm = () => {
     settings: {
       currency: 'USD', 
       currencySymbol: '$', 
-      numberFormat: 'en-US'
+      numberFormat: 'en-US',
+      decimals: 2
     }
   });
 
   const calculate = useCallback(() => {
+    const decimals = form.settings.decimals || 2;
     let subtotal = 0;
     const items = form.items.map(it => {
       const amt = (Number(it.quantity) || 0) * (Number(it.rate) || 0);
@@ -117,7 +119,7 @@ const InvoiceForm = () => {
       return { ...it, amount: amt };
     });
     const total = subtotal + Number(form.totals.bankCharges || 0);
-    const totalInInr = total * Number(form.totals.exchangeRate || 1);
+    const totalInInr = form.settings.currency === 'INR' ? total : (total * Number(form.totals.exchangeRate || 0));
     return { subtotal, total, totalInInr, items, totalInWords: numberToWords(total, form.settings.currency) };
   }, [form.items, form.totals, form.settings]);
 
@@ -217,7 +219,9 @@ const InvoiceForm = () => {
               },
               settings: {
                 ...prev.settings,
-                currency: data.currency || 'USD'
+                currency: data.currency || 'USD',
+                numberFormat: data.numberFormat || prev.settings.numberFormat,
+                decimals: data.decimals ?? prev.settings.decimals
               }
             }));
             if (data.businessDetails) setBilledByDetails(data.businessDetails);
@@ -258,6 +262,25 @@ const InvoiceForm = () => {
     init();
   }, [id]);
 
+  // Synchronize decimal precision when settings change
+  useEffect(() => {
+    const dec = form.settings.decimals;
+    if (dec === undefined) return;
+
+    setForm(f => ({
+      ...f,
+      items: f.items.map(it => ({
+        ...it,
+        rate: it.rate ? (parseFloat(it.rate) || 0).toFixed(dec) : it.rate
+      })),
+      totals: {
+        ...f.totals,
+        bankCharges: f.totals.bankCharges ? (parseFloat(f.totals.bankCharges) || 0).toFixed(dec) : f.totals.bankCharges,
+        exchangeRate: f.totals.exchangeRate ? (parseFloat(f.totals.exchangeRate) || 0).toFixed(dec) : f.totals.exchangeRate
+      }
+    }));
+  }, [form.settings.decimals]);
+
   const handleSave = async (status = 'draft', action = 'save') => {
     try {
       const payload = { 
@@ -278,6 +301,8 @@ const InvoiceForm = () => {
         softwareExportType: form.totals.exportType,
         terms: form.totals.terms,
         currency: form.settings.currency,
+        numberFormat: form.settings.numberFormat,
+        decimals: form.settings.decimals,
         businessDetails: billedByDetails,
         clientDetails: selectedClient ? {
           name: selectedClient.businessName,
@@ -647,7 +672,7 @@ const InvoiceForm = () => {
                 <div className="relative mt-1">
                   <select 
                     className="w-[180px] h-10 border border-[#E4E4E0] rounded-[5px] px-3 text-[13px] font-bold text-[#0C0E10] outline-none appearance-none bg-white cursor-pointer"
-                    value={form.settings.decimals || 2}
+                    value={form.settings.decimals ?? 2}
                     onChange={e => setForm({...form, settings: {...form.settings, decimals: parseInt(e.target.value)}})}
                   >
                     <option value="0">0 (1234)</option>
@@ -824,16 +849,33 @@ const InvoiceForm = () => {
                       <div className="flex items-center justify-end gap-2">
                         <span className="text-[14px] text-[#6B7280]">{form.settings.currencySymbol}</span>
                         <input 
-                          className="w-[80px] text-[14px] text-[#0C0E10] font-bold text-right outline-none bg-transparent disabled:cursor-default"
+                          className="w-[100px] text-[14px] text-[#0C0E10] font-bold text-right outline-none bg-transparent disabled:cursor-default"
                           placeholder="0.00"
                           value={item.rate}
                           disabled={isSubmitted}
-                          onChange={e => updateItem(item.id, 'rate', e.target.value)}
+                          onChange={e => {
+                            let val = e.target.value.replace(/[^0-9.]/g, '');
+                            if ((val.match(/\./g) || []).length > 1) {
+                              const parts = val.split('.');
+                              val = parts[0] + '.' + parts.slice(1).join('');
+                            }
+                            const parts = val.split('.');
+                            const maxDec = form.settings.decimals || 2;
+                            if (parts.length > 1 && parts[1].length > maxDec) {
+                              val = parts[0] + '.' + parts[1].slice(0, maxDec);
+                            }
+                            updateItem(item.id, 'rate', val);
+                          }}
+                          onBlur={e => {
+                            const val = parseFloat(e.target.value) || 0;
+                            const maxDec = form.settings.decimals || 2;
+                            updateItem(item.id, 'rate', val.toFixed(maxDec));
+                          }}
                         />
                       </div>
                     </td>
                     <td className="p-4 px-3 text-right text-[14px] font-bold text-[#0C0E10]">
-                      {baseFormat((Number(item.quantity) || 0) * (Number(item.rate) || 0), form.settings.currency, form.settings.numberFormat)}
+                      {baseFormat((Number(item.quantity) || 0) * (Number(item.rate) || 0), form.settings.currency, form.settings.numberFormat, form.settings.decimals)}
                     </td>
                     <td className="p-4 px-4 text-center">
                       {!isSubmitted && (
@@ -867,7 +909,7 @@ const InvoiceForm = () => {
                 <div className="text-[15px] font-bold text-[#0C0E10] font-heading mb-3">Total in PDF</div>
                 <div className="flex justify-between items-center text-[14px]">
                   <span className="text-[#6B7280]">Amount</span>
-                  <span className="text-[#0C0E10] font-medium">{baseFormat(live.subtotal, form.settings.currency, form.settings.numberFormat)}</span>
+                  <span className="text-[#0C0E10] font-medium">{baseFormat(live.subtotal, form.settings.currency, form.settings.numberFormat, form.settings.decimals)}</span>
                 </div>
                 <div className="flex justify-between items-center text-[14px]">
                   <span className="text-[#6B7280]">Bank Charges</span>
@@ -877,31 +919,65 @@ const InvoiceForm = () => {
                       className="w-20 h-8 border border-[#E4E4E0] rounded-[5px] px-2 text-[13px] font-bold text-right outline-none focus:border-[#95BF47] disabled:bg-[#FAFAF8] disabled:cursor-default"
                       value={form.totals.bankCharges}
                       disabled={isSubmitted}
-                      onChange={e => setForm({...form, totals: {...form.totals, bankCharges: e.target.value}})}
+                      onChange={e => {
+                        let val = e.target.value.replace(/[^0-9.]/g, '');
+                        if ((val.match(/\./g) || []).length > 1) {
+                          const parts = val.split('.');
+                          val = parts[0] + '.' + parts.slice(1).join('');
+                        }
+                        const parts = val.split('.');
+                        const maxDec = form.settings.decimals || 2;
+                        if (parts.length > 1 && parts[1].length > maxDec) {
+                          val = parts[0] + '.' + parts[1].slice(0, maxDec);
+                        }
+                        setForm({...form, totals: {...form.totals, bankCharges: val}});
+                      }}
+                      onBlur={e => {
+                        const val = parseFloat(e.target.value) || 0;
+                        const maxDec = form.settings.decimals || 2;
+                        setForm({...form, totals: {...form.totals, bankCharges: val.toFixed(maxDec)}});
+                      }}
                     />
                   </div>
                 </div>
                 <div className="h-px bg-[#E4E4E0] my-3"></div>
                 <div className="flex justify-between items-center">
                   <span className="text-[20px] font-bold text-[#0C0E10] font-heading">Total ({form.settings.currency})</span>
-                  <span className="text-[20px] font-bold text-[#0C0E10] font-heading">{baseFormat(live.total, form.settings.currency, form.settings.numberFormat)}</span>
+                  <span className="text-[20px] font-bold text-[#0C0E10] font-heading">{baseFormat(live.total, form.settings.currency, form.settings.numberFormat, form.settings.decimals)}</span>
                 </div>
                 
                 <div className="flex justify-between items-center text-[13px] mt-2">
                   <span className="text-[#6B7280]">Conversion Rate (to INR)</span>
                   <div className="flex items-center gap-1">
                     <input 
-                      className="w-[60px] h-8 border border-[#E4E4E0] rounded-[5px] px-2 text-[13px] font-bold text-center outline-none focus:border-[#95BF47] disabled:bg-[#FAFAF8]"
+                      className="w-[80px] h-8 border border-[#E4E4E0] rounded-[5px] px-2 text-[13px] font-bold text-center outline-none focus:border-[#95BF47] disabled:bg-[#FAFAF8]"
                       value={form.totals.exchangeRate}
                       disabled={isSubmitted}
-                      onChange={e => setForm({...form, totals: {...form.totals, exchangeRate: e.target.value}})}
+                      onChange={e => {
+                        let val = e.target.value.replace(/[^0-9.]/g, '');
+                        if ((val.match(/\./g) || []).length > 1) {
+                          const parts = val.split('.');
+                          val = parts[0] + '.' + parts.slice(1).join('');
+                        }
+                        const parts = val.split('.');
+                        const maxDec = form.settings.decimals || 2;
+                        if (parts.length > 1 && parts[1].length > maxDec) {
+                          val = parts[0] + '.' + parts[1].slice(0, maxDec);
+                        }
+                        setForm({...form, totals: {...form.totals, exchangeRate: val}});
+                      }}
+                      onBlur={e => {
+                        const val = parseFloat(e.target.value) || 0;
+                        const maxDec = form.settings.decimals || 2;
+                        setForm({...form, totals: {...form.totals, exchangeRate: val.toFixed(maxDec)}});
+                      }}
                     />
                     <span className="bg-[#F3F8E8] border border-[#E4E4E0] rounded-[3px] text-[12px] text-[#6B7280] font-bold px-1.5 py-0.5">INR</span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[14px] text-[#6B7280]">Total (INR)</span>
-                  <span className="text-[14px] font-bold text-[#0C0E10]">₹{live.totalInInr.toLocaleString(form.settings.numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="text-[14px] font-bold text-[#0C0E10]">₹{live.totalInInr.toLocaleString(form.settings.numberFormat, { minimumFractionDigits: form.settings.decimals || 2, maximumFractionDigits: form.settings.decimals || 2 })}</span>
                 </div>
 
                 <div className="pt-3">

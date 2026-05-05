@@ -231,8 +231,12 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
   const currency = invoice.currency || 'USD';
   const symbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ' };
   const sym = symbols[currency] || currency + ' ';
-  const numLocale = biz.numberFormat || 'en-US';
-  const fmt = (n) => Number(n || 0).toLocaleString(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const numLocale = invoice.numberFormat ?? biz.numberFormat ?? 'en-US';
+  const decimals  = invoice.decimals ?? biz.decimals ?? 2;
+  const fmt = (n) => Number(n || 0).toLocaleString(numLocale, { 
+    minimumFractionDigits: decimals, 
+    maximumFractionDigits: decimals 
+  });
   const formatDate = (d) => {
     if (!d) return '-';
     const date = new Date(d);
@@ -338,8 +342,8 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
     <!-- Header -->
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
       <div>
-        ${invoice.logoUrl 
-          ? `<img src="${invoice.logoUrl}" style="max-width: 190px; max-height: 72px; object-fit: contain; display: block;">`
+        ${(invoice.logoUrl || biz.logoUrl) 
+          ? `<img src="${invoice.logoUrl || biz.logoUrl}" style="max-width: 190px; max-height: 72px; object-fit: contain; display: block;">`
           : `<div style="width: 120px; height: 60px; background: #e5e7eb;"></div>`
         }
       </div>
@@ -409,7 +413,7 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
               ${billedToLines.map(l => `<div style="font-size: 8.5pt; line-height: 1.4;">${l}</div>`).join('')}
               <div style="margin-top: 6px; font-size: 8.5pt; line-height: 1.6;">
                 <div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="font-weight: 700; color: #000; margin-right: 4px;">Export Currency:</span><span style="font-weight: 400; color: #000;">${currency}</span></div>
-                <div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="font-weight: 700; color: #000; margin-right: 4px;">Conversion Rate:</span><span style="font-weight: 400; color: #000;">${fmt(invoice.exchangeRate)} INR</span></div>
+                <div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="font-weight: 700; color: #000; margin-right: 4px;">Conversion Rate:</span><span style="font-weight: 400; color: #000;">${Number(invoice.exchangeRate || 0).toLocaleString(numLocale, { minimumFractionDigits: decimals, maximumFractionDigits: Math.max(decimals, 2) })} INR</span></div>
                 ${poNoAndDate ? `<div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="font-weight: 700; color: #000; margin-right: 4px;">Purchase Order No &amp; Date:</span><span style="font-weight: 400; color: #000;">${poNoAndDate}</span></div>` : ''}
                 ${softwareExportType ? `<div style="font-size: 8.5pt; margin-bottom: 4px; line-height: 1.5;"><span style="font-weight: 700; color: #000; margin-right: 4px;">Type of Software Export:</span><span style="font-weight: 400; color: #000;">${softwareExportType}</span></div>` : ''}
               </div>
@@ -458,7 +462,7 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
             <td style="padding: 10px 12px; text-align: center; vertical-align: top; width: 50%;">
               <div style="font-weight: 700; font-size: 9pt; margin-bottom: 6px;">For ${invoice.businessName || biz.businessName}</div>
               <div style="min-height: 55px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
-                ${invoice.signatureUrl ? `<img src="${invoice.signatureUrl}" style="max-height: 55px; max-width: 75%; object-fit: contain; mix-blend-mode: multiply;">` : ''}
+                ${(invoice.signatureUrl || biz.signatureUrl) ? `<img src="${invoice.signatureUrl || biz.signatureUrl}" style="max-height: 55px; max-width: 75%; object-fit: contain; mix-blend-mode: multiply;">` : ''}
               </div>
               <div style="padding-top: 4px;">
                 <div style="font-size: 7.5pt; color: #6b7280;">Authorized Signatory</div>

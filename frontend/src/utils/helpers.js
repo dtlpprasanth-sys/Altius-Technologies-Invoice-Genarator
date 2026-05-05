@@ -52,10 +52,13 @@ export const numberToWords = (num, currency = 'INR') => {
 };
 
 // Format currency
-export const formatCurrency = (amount, currency = 'INR', locale = 'en-IN') => {
+export const formatCurrency = (amount, currency = 'INR', locale = 'en-IN', decimals = 2) => {
   const symbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ' };
   const sym = symbols[currency] || currency + ' ';
-  return `${sym}${Number(amount || 0).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `${sym}${Number(amount || 0).toLocaleString(locale, { 
+    minimumFractionDigits: decimals, 
+    maximumFractionDigits: decimals 
+  })}`;
 };
 
 // Format date

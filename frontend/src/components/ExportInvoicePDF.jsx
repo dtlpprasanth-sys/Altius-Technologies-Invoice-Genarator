@@ -10,7 +10,8 @@ const B = '1px solid #000';   // standard border
 const F = "'Inter','Helvetica Neue',Arial,sans-serif";
 
 /* ── Shared page header (logo + company address) ── */
-const PageHeader = ({ settings }) => {
+const PageHeader = ({ settings, data }) => {
+  const logo = data.logoUrl || settings.logoUrl;
   const rawAddr = settings.address || settings.streetAddress || '';
   const cityState = [settings.city, settings.state].filter(Boolean).join(', ') + 
                    (settings.zipCode || settings.pincode ? ' – ' + (settings.zipCode || settings.pincode) : '');
@@ -27,8 +28,8 @@ const PageHeader = ({ settings }) => {
   return (
     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
       <div>
-        {settings.logoUrl
-          ? <img src={settings.logoUrl} alt="logo" style={{ maxWidth:190, maxHeight:72, objectFit:'contain', display:'block' }} />
+        {logo
+          ? <img src={logo} alt="logo" style={{ maxWidth:190, maxHeight:72, objectFit:'contain', display:'block' }} />
           : <div style={{ width:120, height:60, background:'#e5e7eb' }} />}
       </div>
       <div style={{ textAlign:'right', lineHeight:1.5, fontSize:'9pt' }}>
@@ -52,9 +53,16 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
   const symbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ' };
   const currency    = data.currency    || header.currency    || 'USD';
   const sym         = symbols[currency] || currency + ' ';
-  const numLocale = data.settings?.numberFormat || settings?.numberFormat || 'en-US';
-  const fmt = (n) => Number(n || 0).toLocaleString(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const exRate      = Number(data.totals?.exchangeRate || data.exchangeRate || settings.exchangeRate || 0).toLocaleString(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const numLocale = data.numberFormat ?? data.settings?.numberFormat ?? settings?.numberFormat ?? 'en-US';
+  const decimals  = data.decimals ?? data.settings?.decimals ?? settings?.decimals ?? 2;
+  const fmt = (n) => Number(n || 0).toLocaleString(numLocale, { 
+    minimumFractionDigits: decimals, 
+    maximumFractionDigits: decimals 
+  });
+  const exRate      = Number(data.totals?.exchangeRate || data.exchangeRate || settings.exchangeRate || 0).toLocaleString(numLocale, { 
+    minimumFractionDigits: decimals, 
+    maximumFractionDigits: Math.max(decimals, 2) 
+  });
   const bankCharges = fmt(data.bankCharges  || totals.bankCharges  || 0);
   const totalFor    = fmt(data.total        || 0);
   const totalINR    = fmt(data.totalInINR   || 0);
@@ -137,7 +145,7 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
 
       {/* ══════════════ PAGE 1 ══════════════ */}
       <Page>
-        <PageHeader settings={settings} />
+        <PageHeader settings={settings} data={data} />
         {/* Title + LUT — no horizontal rule above */}
         <div style={{ textAlign:'center', marginBottom:10 }}>
           <div style={{ fontSize:'15pt', fontWeight:700, letterSpacing:'0.08em' }}>{data.invoiceTitle || header.title || 'Export Invoice'}</div>
@@ -260,8 +268,8 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
                   <td style={{ borderBottom:B, borderRight:B, padding:'8px 4px', textAlign:'center' }}>{item.hsn}</td>
                   <td style={{ borderBottom:B, borderRight:B, padding:'8px 4px', textAlign:'center' }}>{item.quantity}</td>
                   <td style={{ borderBottom:B, borderRight:B, padding:'8px 4px', textAlign:'center' }}>{item.unit}</td>
-                  <td style={{ borderBottom:B, borderRight:B, padding:'8px 6px', textAlign:'right' }}>{sym}{Number(item.rate||0).toFixed(2)}</td>
-                  <td style={{ borderBottom:B, padding:'8px 6px', textAlign:'right', fontWeight:700 }}>{sym}{Number(item.amount||0).toFixed(2)}</td>
+                  <td style={{ borderBottom:B, borderRight:B, padding:'8px 6px', textAlign:'right' }}>{sym}{fmt(item.rate)}</td>
+                  <td style={{ borderBottom:B, padding:'8px 6px', textAlign:'right', fontWeight:700 }}>{sym}{fmt(item.amount)}</td>
                 </tr>
               ))}
 
@@ -297,8 +305,8 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
                 <td style={{ padding:'10px 12px', textAlign:'center', verticalAlign:'top', width:'50%' }}>
                   <div style={{ fontWeight:700, fontSize:'9pt', marginBottom:6 }}>For {settings.businessName}</div>
                   <div style={{ minHeight:55, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:4 }}>
-                    {settings.signatureUrl && (
-                      <img src={settings.signatureUrl} alt="sig"
+                    {(data.signatureUrl || settings.signatureUrl) && (
+                      <img src={data.signatureUrl || settings.signatureUrl} alt="sig"
                         style={{ maxHeight:55, maxWidth:'75%', objectFit:'contain', mixBlendMode:'multiply' }} />
                     )}
                   </div>
