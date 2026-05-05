@@ -4,9 +4,13 @@ const Settings = require('../models/Settings');
 // @route GET /api/settings
 const getSettings = async (req, res) => {
   try {
-    const settings = await Settings.findOne();
+    let settings = await Settings.findOne();
     if (!settings) {
-      return res.status(404).json({ message: 'Settings not found' });
+      // Create a default shared record if none exists
+      settings = await Settings.create({ 
+        userId: req.user.id, 
+        businessName: 'My Organization' 
+      });
     }
     res.json(settings);
   } catch (error) {
@@ -18,12 +22,12 @@ const getSettings = async (req, res) => {
 // @route PUT /api/settings
 const updateSettings = async (req, res) => {
   try {
-    const settings = await Settings.findOne();
+    let settings = await Settings.findOne();
     if (!settings) {
-      return res.status(404).json({ message: 'Settings not found' });
+      settings = await Settings.create({ ...req.body, userId: req.user.id });
+    } else {
+      await settings.update(req.body);
     }
-    
-    await settings.update(req.body);
     res.json(settings);
   } catch (error) {
     res.status(500).json({ message: error.message });
