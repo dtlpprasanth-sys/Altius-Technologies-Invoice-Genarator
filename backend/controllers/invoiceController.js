@@ -4,28 +4,53 @@ const puppeteer = require('puppeteer');
 
 const getInvoices = async (req, res) => {
   try {
-    const { search, status } = req.query;
+    const { search, status, startDate, endDate, page = 1, limit = 10 } = req.query;
     const where = {};
 
+    // Status filter
     if (status && status !== 'all') {
       where.status = status;
     } else {
-      // Only show Draft and Submitted (sent) by default
       where.status = { [Op.in]: ['draft', 'sent'] };
     }
 
+    // Search filter
     if (search) {
       where[Op.or] = [
-        { invoiceNumber: { [Op.like]: `%${search}%` } },
-        { clientName: { [Op.like]: `%${search}%` } }
+        { invoiceNumber: { [Op.iLike]: `%${search}%` } },
+        { clientName: { [Op.iLike]: `%${search}%` } }
       ];
     }
 
-    const invoices = await Invoice.findAll({
+    // Date Range filter
+    if (startDate && endDate) {
+      where.invoiceDate = {
+        [Op.between]: [
+          new Date(startDate + 'T00:00:00.000Z'),
+          new Date(endDate + 'T23:59:59.999Z')
+        ]
+      };
+    } else if (startDate) {
+      where.invoiceDate = { [Op.gte]: new Date(startDate + 'T00:00:00.000Z') };
+    } else if (endDate) {
+      where.invoiceDate = { [Op.lte]: new Date(endDate + 'T23:59:59.999Z') };
+    }
+
+    const offset = (page - 1) * limit;
+
+    const { count, rows: invoices } = await Invoice.findAndCountAll({
       where,
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
     });
-    res.json(invoices);
+
+    res.json({
+      invoices,
+      totalCount: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: parseInt(page)
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -18,17 +18,17 @@ const Clients = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null, name: '' });
 
-  const fetchClients = async () => {
-    setLoading(true);
+  const fetchClients = async (silent = false) => {
+    if (!silent) setLoading(true);
     try { 
       const { data } = await clientApi.getAll(); 
       setClients(data); 
     }
     catch { 
-      toast.error('Failed to load clients'); 
+      if (!silent) toast.error('Failed to load clients'); 
     }
     finally { 
-      setLoading(false); 
+      if (!silent) setLoading(false); 
     }
   };
 
@@ -36,17 +36,22 @@ const Clients = () => {
     fetchClients(); 
 
     // Synchronization: Refresh on focus
-    const handleFocus = () => fetchClients();
+    const handleFocus = () => {
+      // Only refresh if modal is closed to prevent data loss
+      if (!isClientModalOpen) fetchClients(true);
+    };
     window.addEventListener('focus', handleFocus);
     
     // Synchronization: Polling (15s)
-    const interval = setInterval(fetchClients, 15000);
+    const interval = setInterval(() => {
+      if (!isClientModalOpen) fetchClients(true);
+    }, 15000);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
       clearInterval(interval);
     };
-  }, []);
+  }, [isClientModalOpen]);
 
   const openCreate = () => {
     setEditingClient(null);

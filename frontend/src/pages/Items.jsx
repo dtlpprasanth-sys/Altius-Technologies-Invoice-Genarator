@@ -21,15 +21,15 @@ const Items = () => {
   
   const [formData, setFormData] = useState({ name: '', hsnCode: '' });
 
-  const fetchItems = async () => {
-    setLoading(true);
+  const fetchItems = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const { data } = await productApi.getAll();
       setItems(data);
     } catch {
-      toast.error('Failed to load items');
+      if (!silent) toast.error('Failed to load items');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -37,17 +37,21 @@ const Items = () => {
     fetchItems(); 
 
     // Synchronization: Refresh on focus
-    const handleFocus = () => fetchItems();
+    const handleFocus = () => {
+      if (!isModalOpen) fetchItems(true);
+    };
     window.addEventListener('focus', handleFocus);
 
     // Synchronization: Polling (15s)
-    const interval = setInterval(fetchItems, 15000);
+    const interval = setInterval(() => {
+      if (!isModalOpen) fetchItems(true);
+    }, 15000);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
       clearInterval(interval);
     };
-  }, []);
+  }, [isModalOpen]);
 
   const openCreate = () => {
     setEditingItem(null);

@@ -5,7 +5,7 @@ import { formatCurrency, formatDate } from '../utils/helpers';
 import { 
   Plus, Search, Trash2, Eye, Download, 
   FileText, Bell, MoreVertical, 
-  Send, FileEdit, Trash
+  Send, FileEdit, Trash, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -25,33 +25,52 @@ const InvoiceList = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(initialSearch);
   const [status, setStatus] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [downloading, setDownloading] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null, num: '' });
 
-  const fetchInvoices = async () => {
-    setLoading(true);
+  const fetchInvoices = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
-      const { data } = await invoiceApi.getAll({ search, status, limit: 50 });
-      setInvoices(Array.isArray(data) ? data : (data.invoices || []));
-    } catch { toast.error('Failed to load invoices'); }
-    finally { setLoading(false); }
+      const params = { 
+        search, 
+        status, 
+        startDate, 
+        endDate, 
+        page: currentPage, 
+        limit: 10 
+      };
+      const { data } = await invoiceApi.getAll(params);
+      setInvoices(data.invoices || []);
+      setTotalPages(data.totalPages || 1);
+      setTotalCount(data.totalCount || 0);
+    } catch { 
+      if (!silent) toast.error('Failed to load invoices'); 
+    }
+    finally { 
+      if (!silent) setLoading(false); 
+    }
   };
 
   useEffect(() => { 
     fetchInvoices(); 
 
     // Synchronization: Refresh when window gets focus
-    const handleFocus = () => fetchInvoices();
+    const handleFocus = () => fetchInvoices(true);
     window.addEventListener('focus', handleFocus);
     
     // Synchronization: Periodic polling (every 15s)
-    const interval = setInterval(fetchInvoices, 15000);
+    const interval = setInterval(() => fetchInvoices(true), 15000);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
       clearInterval(interval);
     };
-  }, [search, status]);
+  }, [search, status, startDate, endDate, currentPage]);
 
   const handleDelete = (id, num, e) => {
     e.stopPropagation();
@@ -114,31 +133,63 @@ const InvoiceList = () => {
       <div className="page-body p-8 px-8 max-w-[1600px] mx-auto w-full">
         
         {/* CONTROL BAR */}
-        <div className="h-[52px] bg-white border border-[#E4E4E0] rounded-[5px] flex items-center justify-between px-5 mb-4 shadow-sm">
-          <div className="flex items-center gap-0 h-full">
-            {STATUSES.map(s => (
-              <button 
-                key={s.key} 
-                onClick={() => setStatus(s.key)}
-                className={`h-[52px] px-4 text-[13px] font-medium transition-all border-b-2 whitespace-nowrap ${
-                  status === s.key 
-                    ? 'text-[#0C0E10] font-bold border-[#95BF47]' 
-                    : 'text-[#6B7280] border-transparent hover:text-[#0C0E10]'
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
+        <div className="bg-white border border-[#E4E4E0] rounded-[5px] p-5 mb-4 shadow-sm flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-0 h-10">
+              {STATUSES.map(s => (
+                <button 
+                  key={s.key} 
+                  onClick={() => { setStatus(s.key); setCurrentPage(1); }}
+                  className={`h-10 px-4 text-[13px] font-medium transition-all border-b-2 whitespace-nowrap ${
+                    status === s.key 
+                      ? 'text-[#0C0E10] font-bold border-[#95BF47]' 
+                      : 'text-[#6B7280] border-transparent hover:text-[#0C0E10]'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative w-72 flex items-center bg-[#FAFAF8] border border-[#E4E4E0] rounded-[5px] h-10 px-3 focus-within:bg-white focus-within:border-[#95BF47] transition-all">
+              <Search size={16} className="text-[#6B7280] flex-shrink-0" />
+              <input
+                value={search}
+                onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+                placeholder="Search invoices or clients..."
+                className="w-full bg-transparent border-none outline-none pl-2.5 text-[13px] font-medium text-[#0C0E10] placeholder:text-[#6B7280]"
+              />
+            </div>
           </div>
 
-          <div className="relative w-72 flex items-center bg-white border border-[#E4E4E0] rounded-[5px] h-9 px-3 focus-within:border-[#95BF47] focus-within:ring-4 focus-within:ring-[#95BF47]/10 transition-all">
-            <Search size={16} className="text-[#6B7280] flex-shrink-0" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search invoices or clients..."
-              className="w-full bg-transparent border-none outline-none pl-2.5 text-[13px] font-medium text-[#0C0E10] placeholder:text-[#6B7280]"
-            />
+          {/* DATE FILTERS */}
+          <div className="flex items-center gap-4 pt-4 border-t border-[#F4F4F1]">
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] font-bold text-[#6B7280] uppercase tracking-wider">From:</span>
+              <input 
+                type="date" 
+                value={startDate}
+                onChange={e => { setStartDate(e.target.value); setCurrentPage(1); }}
+                className="bg-[#FAFAF8] border border-[#E4E4E0] rounded-[4px] px-3 py-1.5 text-[13px] font-medium text-[#0C0E10] focus:border-[#95BF47] outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] font-bold text-[#6B7280] uppercase tracking-wider">To:</span>
+              <input 
+                type="date" 
+                value={endDate}
+                onChange={e => { setEndDate(e.target.value); setCurrentPage(1); }}
+                className="bg-[#FAFAF8] border border-[#E4E4E0] rounded-[4px] px-3 py-1.5 text-[13px] font-medium text-[#0C0E10] focus:border-[#95BF47] outline-none"
+              />
+            </div>
+            {(startDate || endDate || search !== '' || status !== 'all') && (
+              <button 
+                onClick={() => { setStartDate(''); setEndDate(''); setSearch(''); setStatus('all'); setCurrentPage(1); }}
+                className="text-[12px] font-bold text-[#CC3A3A] hover:underline ml-auto"
+              >
+                Reset Filters
+              </button>
+            )}
           </div>
         </div>
 
@@ -155,37 +206,23 @@ const InvoiceList = () => {
                 <FileText size={32} className="text-[#6B7280]" />
               </div>
               
-              {search === '' ? (
-                <>
-                  <h3 className="text-[22px] font-bold text-[#0C0E10] font-heading mb-2">No invoices found</h3>
-                  <p className="text-[14px] text-[#6B7280] max-w-sm mb-8 leading-relaxed">
-                    {status === 'all' ? 'No invoices yet.' : `No ${status === 'sent' ? 'Submitted' : 'Draft'} invoices yet.`} Create your first invoice to get started.
-                  </p>
-                  <Link to="/invoices/new" className="btn-navy h-11 px-8 rounded-[5px] text-sm flex items-center gap-2">
-                    <Plus size={18} strokeWidth={3} /> Create your first invoice
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <h3 className="text-[22px] font-bold text-[#0C0E10] font-heading mb-2">No results matching filters</h3>
-                  <p className="text-[14px] text-[#6B7280] max-w-sm mb-8 leading-relaxed">
-                    We couldn't find any {status === 'all' ? '' : (status === 'sent' ? 'Submitted ' : 'Draft ')}invoices matching "{search}".
-                  </p>
-                  <button 
-                    onClick={() => { setStatus('all'); setSearch(''); }}
-                    className="text-[#95BF47] font-bold text-[14px] hover:underline"
-                  >
-                    Clear all filters
-                  </button>
-                </>
-              )}
+              <h3 className="text-[22px] font-bold text-[#0C0E10] font-heading mb-2">No invoices found</h3>
+              <p className="text-[14px] text-[#6B7280] max-w-sm mb-8 leading-relaxed">
+                We couldn't find any invoices matching your selected filters. Try adjusting your search or dates.
+              </p>
+              <button 
+                onClick={() => { setStatus('all'); setSearch(''); setStartDate(''); setEndDate(''); setCurrentPage(1); }}
+                className="text-[#95BF47] font-bold text-[14px] hover:underline"
+              >
+                Clear all filters
+              </button>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-[#02172E] text-white">
                   <tr>
-                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[40px]"><input type="checkbox" className="w-4 h-4 accent-[#95BF47] rounded" /></th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[60px]">#</th>
                     <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[180px]">Invoice No</th>
                     <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider">Client Name</th>
                     <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[140px]">Issue Date</th>
@@ -196,13 +233,13 @@ const InvoiceList = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E4E4E0]">
-                  {invoices.map(inv => (
+                  {invoices.map((inv, index) => (
                       <tr 
                         key={inv.id || inv._id} 
                         className="hover:bg-[#F3F8E8] transition-all group cursor-pointer"
                         onClick={() => navigate(`/invoices/${inv.id || inv._id}/edit`)}
                       >
-                      <td className="px-6 py-4" onClick={e => e.stopPropagation()}><input type="checkbox" className="w-4 h-4 accent-[#95BF47] rounded" /></td>
+                      <td className="px-6 py-4 text-[13px] font-bold text-[#6B7280]">{(currentPage - 1) * 10 + index + 1}</td>
                       <td className="px-6 py-4 text-[14px] font-bold text-[#0C0E10] whitespace-nowrap">{inv.invoiceNumber}</td>
                       <td className="px-6 py-4 text-[14px] text-[#0C0E10]">{inv.clientName || 'Draft'}</td>
                       <td className="px-6 py-4 text-[13px] text-[#6B7280]">{formatDate(inv.invoiceDate)}</td>
@@ -224,6 +261,32 @@ const InvoiceList = () => {
                   ))}
                 </tbody>
               </table>
+
+              {/* PAGINATION FOOTER */}
+              <div className="px-6 py-4 border-t border-[#E4E4E0] flex items-center justify-between bg-white">
+                <div className="text-[13px] text-[#6B7280] font-medium">
+                  Showing <span className="font-bold text-[#0C0E10]">{invoices.length}</span> of <span className="font-bold text-[#0C0E10]">{totalCount}</span> invoices
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    className="p-2 border border-[#E4E4E0] rounded-[4px] text-[#6B7280] hover:bg-[#FAFAF8] disabled:opacity-40 disabled:hover:bg-transparent transition-all"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <div className="px-4 text-[13px] font-bold text-[#0C0E10]">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <button 
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    className="p-2 border border-[#E4E4E0] rounded-[4px] text-[#6B7280] hover:bg-[#FAFAF8] disabled:opacity-40 disabled:hover:bg-transparent transition-all"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

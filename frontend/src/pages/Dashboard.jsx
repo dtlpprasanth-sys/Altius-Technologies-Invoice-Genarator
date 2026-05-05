@@ -26,7 +26,8 @@ const Dashboard = () => {
   const [allInvoices, setAllInvoices] = useState([]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (silent = false) => {
+      if (!silent) setLoading(true);
       try {
         const { data } = await invoiceApi.getAll({ limit: 500 });
         const inv = Array.isArray(data) ? data : (data.invoices || []);
@@ -50,17 +51,17 @@ const Dashboard = () => {
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
       } finally {
-        setLoading(false);
+        if (!silent) setLoading(false);
       }
     };
     fetchData();
 
     // Synchronization: Refresh data when window gets focus (e.g. user switches back to tab)
-    const handleFocus = () => fetchData();
+    const handleFocus = () => fetchData(true);
     window.addEventListener('focus', handleFocus);
 
     // Synchronization: Background polling every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(() => fetchData(true), 30000);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
