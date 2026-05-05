@@ -83,6 +83,7 @@ export const adminApi = {
   list: () => api.get('/admin/list'),
   create: (data) => api.post('/admin/create', data),
   toggleStatus: (id) => api.put(`/admin/${id}/toggle-status`),
+  delete: (id) => api.delete(`/admin/${id}`),
 };
 
 export default api;

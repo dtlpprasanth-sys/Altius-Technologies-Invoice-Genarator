@@ -4,8 +4,9 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { 
   Shield, UserPlus, Power, Check, X, 
-  Loader2, Mail, User, ShieldAlert 
+  Loader2, Mail, User, ShieldAlert, Trash
 } from 'lucide-react';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const ManageAdmins = () => {
   const { user: currentAdmin } = useAuth();
@@ -14,6 +15,9 @@ const ManageAdmins = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [creating, setCreating] = useState(false);
+
+  // Delete Modal States
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, adminId: null, adminName: '' });
 
   const fetchAdmins = async () => {
     try {
@@ -37,6 +41,26 @@ const ManageAdmins = () => {
       fetchAdmins();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Update failed');
+    }
+  };
+
+  const handleDeleteClick = (adminId, adminName) => {
+    if (adminId === currentAdmin?.id) {
+      toast.error('You cannot delete your own account');
+      return;
+    }
+    setDeleteModal({ isOpen: true, adminId, adminName });
+  };
+
+  const executeDelete = async () => {
+    try {
+      await adminApi.delete(deleteModal.adminId);
+      toast.success('Admin deleted successfully');
+      fetchAdmins();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Delete failed');
+    } finally {
+      setDeleteModal({ isOpen: false, adminId: null, adminName: '' });
     }
   };
 
@@ -114,17 +138,28 @@ const ManageAdmins = () => {
                     </span>
                   </td>
                   <td className="px-8 py-5 text-right">
-                    <button 
-                      onClick={() => handleToggleStatus(admin.id)}
-                      disabled={admin.id === currentAdmin?.id}
-                      className={`px-4 py-2 rounded-[5px] text-[12px] font-bold uppercase tracking-wider transition-all ${
-                        admin.isActive 
-                          ? 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100' 
-                          : 'bg-[#F3F8E8] text-[#95BF47] hover:bg-[#95BF47] hover:text-[#02172E] border border-[#95BF47]/20'
-                      } disabled:opacity-30 disabled:cursor-not-allowed`}
-                    >
-                      {admin.isActive ? 'Deactivate' : 'Activate'}
-                    </button>
+                    <div className="flex items-center justify-end gap-3">
+                      <button 
+                        onClick={() => handleToggleStatus(admin.id)}
+                        disabled={admin.id === currentAdmin?.id}
+                        className={`px-4 py-2 rounded-[5px] text-[12px] font-bold uppercase tracking-wider transition-all ${
+                          admin.isActive 
+                            ? 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100' 
+                            : 'bg-[#F3F8E8] text-[#95BF47] hover:bg-[#95BF47] hover:text-[#02172E] border border-[#95BF47]/20'
+                        } disabled:opacity-30 disabled:cursor-not-allowed`}
+                      >
+                        {admin.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
+
+                      <button 
+                        onClick={() => handleDeleteClick(admin.id, admin.name || admin.email)}
+                        disabled={admin.id === currentAdmin?.id}
+                        className="p-2.5 rounded-[5px] bg-[#CC3A3A]/5 text-[#CC3A3A] hover:bg-[#CC3A3A] hover:text-white border border-[#CC3A3A]/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="Delete Admin"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -132,6 +167,16 @@ const ManageAdmins = () => {
           </table>
         </div>
       </div>
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog 
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
+        onConfirm={executeDelete}
+        title="Delete Administrator"
+        message={`Are you sure you want to permanently delete "${deleteModal.adminName}"? This action cannot be undone and they will lose all access.`}
+        confirmText="Permanently Delete"
+      />
 
       {/* Create Modal */}
       {isModalOpen && (

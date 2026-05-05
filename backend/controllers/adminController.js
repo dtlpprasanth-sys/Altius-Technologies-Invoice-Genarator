@@ -14,8 +14,9 @@ const generateToken = (id) => {
 exports.adminLogin = async (req, res) => {
   try {
     const { username, password } = req.body;
+    const { User } = require('../models');
 
-    const admin = await Admin.findOne({ where: { username } });
+    const admin = await User.findOne({ where: { email: username.toLowerCase().trim(), isAdmin: true } });
 
     if (admin && (await admin.matchPassword(password))) {
       if (!admin.isActive) {
@@ -24,7 +25,7 @@ exports.adminLogin = async (req, res) => {
 
       res.json({
         id: admin.id,
-        username: admin.username,
+        username: admin.name,
         email: admin.email,
         token: generateToken(admin.id)
       });
@@ -41,7 +42,10 @@ exports.adminLogin = async (req, res) => {
 // @access  Private (Admin)
 exports.getMe = async (req, res) => {
   try {
-    const admin = await Admin.findByPk(req.admin.id, {
+    const { User } = require('../models');
+    // The middleware might set req.user or req.admin, using req.user as standard
+    const adminId = req.user?.id || req.admin?.id;
+    const admin = await User.findByPk(adminId, {
       attributes: { exclude: ['password'] }
     });
     res.json(admin);
@@ -75,8 +79,8 @@ exports.createAdmin = async (req, res) => {
     const { username, email, password } = req.body;
     const { User, Settings } = require('../models');
 
-    // Use username as the name and the login 'email' field for simplicity
-    const loginField = email || username;
+    // Standardize to lowercase for reliable login
+    const loginField = (email || username).toLowerCase().trim();
 
     const existingUser = await User.findOne({ where: { email: loginField } });
     
@@ -137,6 +141,32 @@ exports.toggleStatus = async (req, res) => {
     await admin.save();
 
     res.json({ message: `Account status changed to ${admin.isActive ? 'Active' : 'Inactive'}` });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete admin
+// @route   DELETE /api/admin/:id
+// @access  Private (Admin)
+exports.deleteAdmin = async (req, res) => {
+  try {
+    const { User } = require('../models');
+    const admin = await User.findByPk(req.params.id);
+    
+    if (!admin) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Prevent deleting yourself
+    const currentAdminId = req.user?.id || req.admin?.id;
+    if (admin.id === currentAdminId) {
+      return res.status(400).json({ message: 'You cannot delete your own account' });
+    }
+
+    await admin.destroy();
+
+    res.json({ message: 'Admin account deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
