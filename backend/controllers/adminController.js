@@ -109,8 +109,6 @@ exports.createAdmin = async (req, res) => {
       isAdmin: true
     });
 
-    await Settings.create({ userId: admin.id, businessName: `${username} Corp` });
-
     res.status(201).json({
       id: admin.id,
       username: admin.name,
