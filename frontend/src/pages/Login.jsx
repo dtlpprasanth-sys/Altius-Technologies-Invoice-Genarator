@@ -72,7 +72,7 @@ const Login = () => {
                     type="text"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="admin"
+                    placeholder="Username"
                     className="w-full h-12 border-b border-[#E4E4E0] text-[14px] text-[#0C0E10] bg-transparent outline-none focus:border-[#95BF47] transition-all placeholder:text-[#6B7280]/50"
                   />
                 </div>
