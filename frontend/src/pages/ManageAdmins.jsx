@@ -123,7 +123,10 @@ const ManageAdmins = () => {
             <p className="text-[#6B7280] mt-1 font-medium italic">Control center for system administrators</p>
           </div>
           <button 
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setFormData({ username: '', password: '' });
+              setIsModalOpen(true);
+            }}
             className="btn-navy flex items-center gap-2 h-11 px-6"
           >
             <UserPlus size={20} /> Create New Admin
@@ -234,6 +237,7 @@ const ManageAdmins = () => {
                   <input
                     type="password"
                     required
+                    autoComplete="new-password"
                     className="w-full h-11 bg-[#FAFAF8] border border-[#E4E4E0] rounded-[5px] pl-12 pr-4 text-[14px] outline-none focus:border-[#95BF47]"
                     placeholder="••••••••"
                     value={resetFormData.password}
@@ -249,6 +253,7 @@ const ManageAdmins = () => {
                   <input
                     type="password"
                     required
+                    autoComplete="new-password"
                     className="w-full h-11 bg-[#FAFAF8] border border-[#E4E4E0] rounded-[5px] pl-12 pr-4 text-[14px] outline-none focus:border-[#95BF47]"
                     placeholder="••••••••"
                     value={resetFormData.confirmPassword}
@@ -303,6 +308,7 @@ const ManageAdmins = () => {
                   <input
                     type="text"
                     required
+                    autoComplete="off"
                     className="w-full h-11 bg-[#FAFAF8] border border-[#E4E4E0] rounded-[5px] pl-12 pr-4 text-[14px] outline-none focus:border-[#95BF47]"
                     placeholder="Admin username"
                     value={formData.username}
@@ -320,6 +326,7 @@ const ManageAdmins = () => {
                   <input
                     type="password"
                     required
+                    autoComplete="new-password"
                     className="w-full h-11 bg-[#FAFAF8] border border-[#E4E4E0] rounded-[5px] pl-12 pr-4 text-[14px] outline-none focus:border-[#95BF47]"
                     placeholder="••••••••"
                     value={formData.password}
