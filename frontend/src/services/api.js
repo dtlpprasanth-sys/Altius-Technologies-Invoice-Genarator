@@ -83,6 +83,7 @@ export const adminApi = {
   list: () => api.get('/admin/list'),
   create: (data) => api.post('/admin/create', data),
   toggleStatus: (id) => api.put(`/admin/${id}/toggle-status`),
+  resetPassword: (id, password) => api.put(`/admin/${id}/reset-password`, { password }),
   delete: (id) => api.delete(`/admin/${id}`),
 };
 

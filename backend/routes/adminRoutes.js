@@ -6,7 +6,8 @@ const {
   listAdmins, 
   createAdmin, 
   toggleStatus,
-  deleteAdmin 
+  deleteAdmin,
+  resetAdminPassword 
 } = require('../controllers/adminController');
 const { protect, protectAdmin } = require('../middleware/auth');
 
@@ -15,6 +16,7 @@ router.get('/me', protect, protectAdmin, getMe);
 router.get('/list', protect, protectAdmin, listAdmins);
 router.post('/create', protect, protectAdmin, createAdmin);
 router.put('/:id/toggle-status', protect, protectAdmin, toggleStatus);
+router.put('/:id/reset-password', protect, protectAdmin, resetAdminPassword);
 router.delete('/:id', protect, protectAdmin, deleteAdmin);
 
 module.exports = router;

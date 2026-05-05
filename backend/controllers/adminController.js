@@ -171,3 +171,28 @@ exports.deleteAdmin = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// @desc    Reset admin password
+// @route   PUT /api/admin/:id/reset-password
+// @access  Private (Admin)
+exports.resetAdminPassword = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const { User } = require('../models');
+    
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required' });
+    }
+
+    const admin = await User.findByPk(req.params.id);
+    if (!admin) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    admin.password = password;
+    await admin.save();
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

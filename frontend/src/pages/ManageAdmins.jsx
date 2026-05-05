@@ -4,7 +4,8 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { 
   Shield, UserPlus, Power, Check, X, 
-  Loader2, Mail, User, ShieldAlert, Trash
+  Loader2, Mail, User, ShieldAlert, Trash,
+  KeyRound, Lock
 } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -18,6 +19,11 @@ const ManageAdmins = () => {
 
   // Delete Modal States
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, adminId: null, adminName: '' });
+
+  // Reset Password States
+  const [resetModal, setResetModal] = useState({ isOpen: false, adminId: null, adminName: '' });
+  const [resetFormData, setResetFormData] = useState({ password: '', confirmPassword: '' });
+  const [resetting, setResetting] = useState(false);
 
   const fetchAdmins = async () => {
     try {
@@ -61,6 +67,25 @@ const ManageAdmins = () => {
       toast.error(error.response?.data?.message || 'Delete failed');
     } finally {
       setDeleteModal({ isOpen: false, adminId: null, adminName: '' });
+    }
+  };
+
+  const handleResetSubmit = async (e) => {
+    e.preventDefault();
+    if (resetFormData.password !== resetFormData.confirmPassword) {
+      return toast.error('Passwords do not match');
+    }
+
+    setResetting(true);
+    try {
+      await adminApi.resetPassword(resetModal.adminId, resetFormData.password);
+      toast.success('Password updated successfully');
+      setResetModal({ isOpen: false, adminId: null, adminName: '' });
+      setResetFormData({ password: '', confirmPassword: '' });
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Reset failed');
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -152,6 +177,14 @@ const ManageAdmins = () => {
                       </button>
 
                       <button 
+                        onClick={() => setResetModal({ isOpen: true, adminId: admin.id, adminName: admin.name || admin.email })}
+                        className="p-2.5 rounded-[5px] bg-[#95BF47]/5 text-[#95BF47] hover:bg-[#95BF47] hover:text-[#02172E] border border-[#95BF47]/10 transition-all"
+                        title="Reset Password"
+                      >
+                        <KeyRound size={16} />
+                      </button>
+
+                      <button 
                         onClick={() => handleDeleteClick(admin.id, admin.name || admin.email)}
                         disabled={admin.id === currentAdmin?.id}
                         className="p-2.5 rounded-[5px] bg-[#CC3A3A]/5 text-[#CC3A3A] hover:bg-[#CC3A3A] hover:text-white border border-[#CC3A3A]/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
@@ -177,6 +210,77 @@ const ManageAdmins = () => {
         message={`Are you sure you want to permanently delete "${deleteModal.adminName}"? This action cannot be undone and they will lose all access.`}
         confirmText="Permanently Delete"
       />
+
+      {/* Reset Password Modal */}
+      {resetModal.isOpen && (
+        <div className="fixed inset-0 bg-[#02172E]/60 backdrop-blur-sm z-[300] flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-white rounded-[5px] w-full max-w-md shadow-2xl overflow-hidden animate-scale-up border border-[#E4E4E0]">
+            <div className="px-8 py-6 bg-[#FAFAF8] border-b border-[#E4E4E0] flex justify-between items-center">
+              <h2 className="text-xl font-bold text-[#0C0E10] font-heading flex items-center gap-2">
+                <KeyRound size={20} className="text-[#95BF47]" /> Reset Password
+              </h2>
+              <button onClick={() => setResetModal({ ...resetModal, isOpen: false })} className="text-[#6B7280] hover:text-[#0C0E10]">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleResetSubmit} className="p-8 space-y-6">
+              <p className="text-[14px] text-[#6B7280]">Resetting password for <span className="font-bold text-[#0C0E10]">{resetModal.adminName}</span></p>
+              
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-[#6B7280] uppercase tracking-widest block">New Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B7280]" size={18} />
+                  <input
+                    type="password"
+                    required
+                    className="w-full h-11 bg-[#FAFAF8] border border-[#E4E4E0] rounded-[5px] pl-12 pr-4 text-[14px] outline-none focus:border-[#95BF47]"
+                    placeholder="••••••••"
+                    value={resetFormData.password}
+                    onChange={(e) => setResetFormData({ ...resetFormData, password: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-[#6B7280] uppercase tracking-widest block">Confirm Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B7280]" size={18} />
+                  <input
+                    type="password"
+                    required
+                    className="w-full h-11 bg-[#FAFAF8] border border-[#E4E4E0] rounded-[5px] pl-12 pr-4 text-[14px] outline-none focus:border-[#95BF47]"
+                    placeholder="••••••••"
+                    value={resetFormData.confirmPassword}
+                    onChange={(e) => setResetFormData({ ...resetFormData, confirmPassword: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => setResetModal({ ...resetModal, isOpen: false })}
+                  className="flex-1 h-11 text-[14px] font-bold text-[#6B7280] hover:text-[#0C0E10]"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={resetting}
+                  className="flex-1 btn-navy h-11 flex items-center justify-center gap-2"
+                >
+                  {resetting ? <Loader2 className="animate-spin" size={18} /> : (
+                    <>
+                      <Check size={18} strokeWidth={3} /> Update Password
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Create Modal */}
       {isModalOpen && (
