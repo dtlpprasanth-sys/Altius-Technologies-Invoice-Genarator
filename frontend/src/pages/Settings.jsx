@@ -204,6 +204,7 @@ const Settings = () => {
                   <DataField label="Phone Number" value={settings.phone} field="phone" isEditing={isEditing} settings={settings} setSettings={setSettings} />
                   <DataField label="Telephone No" value={settings.telephone} field="telephone" isEditing={isEditing} settings={settings} setSettings={setSettings} />
                   <DataField label="Business Website" value={settings.website} field="website" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                  <DataField label="Registered Office Address" value={settings.registeredOffice} field="registeredOffice" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
                   <DataField label="Street Address Display" value={settings.address} field="address" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
                   <DataField label="City" value={settings.city} field="city" isEditing={isEditing} settings={settings} setSettings={setSettings} />
                   <DataField label="Postal Code" value={settings.pincode} field="pincode" isEditing={isEditing} settings={settings} setSettings={setSettings} />
