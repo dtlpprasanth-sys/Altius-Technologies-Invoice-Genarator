@@ -19,7 +19,7 @@ const Items = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   
-  const [formData, setFormData] = useState({ name: '', hsnCode: '' });
+  const [formData, setFormData] = useState({ name: '', hsnCode: '998313' });
 
   const fetchItems = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -55,7 +55,7 @@ const Items = () => {
 
   const openCreate = () => {
     setEditingItem(null);
-    setFormData({ name: '', hsnCode: '' });
+    setFormData({ name: '', hsnCode: '998313' });
     setIsModalOpen(true);
   };
 

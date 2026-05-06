@@ -7,7 +7,7 @@ const ProductRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    hsnCode: '',
+    hsnCode: '998313',
     price: 0,
     unit: '',
     description: ''
@@ -25,7 +25,7 @@ const ProductRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
       toast.success('Item registered successfully');
       if (onSuccess) onSuccess(res.data);
       onClose();
-      setFormData({ name: '', hsnCode: '', price: 0, unit: 'per SKU', description: '' });
+      setFormData({ name: '', hsnCode: '998313', price: 0, unit: 'per SKU', description: '' });
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error adding item');
     } finally {
