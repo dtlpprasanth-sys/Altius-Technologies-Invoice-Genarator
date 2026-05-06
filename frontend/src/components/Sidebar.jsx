@@ -13,7 +13,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
-    { to: '/invoices', icon: FileText, label: 'Invoices', id: 'invoices', badge: true },
+    { to: '/invoices', icon: FileText, label: 'Invoices', id: 'invoices' },
     { to: '/clients', icon: Users, label: 'Clients', id: 'clients' },
     { to: '/items', icon: Box, label: 'Item Master', id: 'items' },
     { to: '/settings', icon: User, label: 'Profile', id: 'settings' },
@@ -51,7 +51,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           >
             <item.icon className="nav-icon" size={18} />
             <span className="nav-label">{item.label}</span>
-            {item.badge && <span className="nav-badge"></span>}
+
           </Link>
         ))}
 
