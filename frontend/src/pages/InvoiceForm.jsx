@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { invoiceApi, clientApi, settingsApi, productApi, unitApi } from '../services/api';
 import { formatCurrency as baseFormat, numberToWords } from '../utils/helpers';
+import { CURRENCIES, CURRENCY_SYMBOLS } from '../utils/currencies';
 import { toast } from 'react-toastify';
 import {
   Plus, Trash2, X, ChevronDown, FileText, 
@@ -44,6 +45,8 @@ const InvoiceForm = () => {
   const [modalTriggerRowId, setModalTriggerRowId] = useState(null);
   const [customUnit, setCustomUnit] = useState('');
   const [selectedClient, setSelectedClient] = useState(null);
+  const [bankAccounts, setBankAccounts] = useState([]);
+  const [selectedBankDetails, setSelectedBankDetails] = useState(null);
 
   // ... rest of state and effects ...
 
@@ -145,8 +148,21 @@ const InvoiceForm = () => {
               streetAddress: s.address || '', 
               email: s.email || '', 
               phone: s.phone || '', 
-              lutDetails: s.lutDetails || ''
+              lutDetails: s.lutDetails || '',
+              ieCode: s.ieCode || '',
+              cin: s.cin || '',
+              website: s.website || '',
+              registeredOffice: s.registeredOffice || '',
+              satelliteStation: s.satelliteStation || '',
+              telephone: s.telephone || ''
             });
+            
+            if (s.bankAccounts) {
+              setBankAccounts(s.bankAccounts);
+              // Set initial bank details based on current currency
+              const matchingBank = (s.bankAccounts || []).find(b => b.currency === form.settings.currency);
+              setSelectedBankDetails(matchingBank || null);
+            }
 
             if (!id) {
               const now = new Date();
@@ -181,7 +197,7 @@ const InvoiceForm = () => {
                     return [];
                   })()
                 },
-                settings: { ...f.settings, currency: s.currency || 'USD' }
+                settings: { ...f.settings, currency: s.currency || 'USD', currencySymbol: CURRENCY_SYMBOLS[s.currency || 'USD'] || '$' }
               }));
             }
           }
@@ -220,12 +236,18 @@ const InvoiceForm = () => {
               settings: {
                 ...prev.settings,
                 currency: data.currency || 'USD',
+                currencySymbol: CURRENCY_SYMBOLS[data.currency || 'USD'] || '$',
                 numberFormat: data.numberFormat || prev.settings.numberFormat,
                 decimals: data.decimals ?? prev.settings.decimals
               }
             }));
-            if (data.businessDetails) setBilledByDetails(data.businessDetails);
-            setInvoiceStatus(data.status || 'draft');
+            // For drafts, we want to stay updated with latest settings
+            if (data.status !== 'draft' && data.businessDetails) {
+              setBilledByDetails(data.businessDetails);
+            }
+            if (data.bankDetails) setSelectedBankDetails(data.bankDetails);
+            const loadedStatus = data.status || 'draft';
+            setInvoiceStatus(loadedStatus);
             
             const searchId = data.clientId || data.clientDetails?.id;
             if (searchId) {
@@ -287,6 +309,7 @@ const InvoiceForm = () => {
         ...form, 
         ...live, 
         status, 
+        type: 'invoice',
         totalInINR: live.totalInInr,
         invoiceNumber: form.header.invoiceNumber,
         invoiceTitle: form.header.title,
@@ -317,7 +340,8 @@ const InvoiceForm = () => {
           id: selectedClient.id || selectedClient._id
         } : null,
         clientName: selectedClient?.businessName || 'Draft',
-        clientId: selectedClient ? (selectedClient.id || selectedClient._id) : null
+        clientId: selectedClient ? (selectedClient.id || selectedClient._id) : null,
+        bankDetails: selectedBankDetails
       };
       let savedInvoice;
       if (id) {
@@ -332,7 +356,7 @@ const InvoiceForm = () => {
         toast.success('Invoice saved. Opening preview...');
         navigate(`/invoices/${invoiceId}`);
       } else {
-        toast.success(status === 'draft' ? 'Invoice saved as draft' : 'Invoice submitted successfully');
+        toast.success(id ? 'Invoice updated successfully' : 'Invoice saved as draft');
         navigate('/invoices');
       }
     } catch (err) { 
@@ -376,7 +400,7 @@ const InvoiceForm = () => {
       <div className="h-14 bg-white border-b border-[#E4E4E0] flex flex-col items-center justify-center sticky top-0 z-30 shadow-sm">
         <div className="flex items-center gap-3">
           <h2 className="text-[22px] font-bold text-[#0C0E10] font-heading">
-            {id ? (isSubmitted ? 'Invoice Details' : 'Edit Invoice') : 'Create New Invoice'}
+            {id ? (isSubmitted ? `Invoice Details` : `Edit Invoice`) : `Create New Invoice`}
           </h2>
           {isSubmitted && (
             <span className="px-2.5 py-0.5 bg-[#F3F8E8] text-[#95BF47] text-[10px] font-black uppercase tracking-widest rounded-full border border-[#95BF47]/30 flex items-center gap-1">
@@ -384,7 +408,7 @@ const InvoiceForm = () => {
             </span>
           )}
         </div>
-        <p className="text-[12px] text-[#6B7280] font-medium mt-0.5">{isSubmitted ? 'Finalized Record' : '① Add Invoice Details'}</p>
+        <p className="text-[12px] text-[#6B7280] font-medium mt-0.5">{isSubmitted ? 'Finalized Record' : `① Add Invoice Details`}</p>
       </div>
 
       <div className="max-w-[1200px] mx-auto w-full px-6 py-6">
@@ -638,31 +662,19 @@ const InvoiceForm = () => {
                     className={`w-[320px] h-10 border border-[#E4E4E0] rounded-[5px] px-3 text-[13px] font-bold text-[#0C0E10] outline-none appearance-none bg-white ${isSubmitted ? 'cursor-default bg-[#FAFAF8]' : 'focus:border-[#95BF47] cursor-pointer'}`}
                     value={form.settings.currency}
                     disabled={isSubmitted}
-                    onChange={e => {
-                      const val = e.target.value;
-                      const symbols = {
-                        'USD': '$', 'EUR': '€', 'INR': '₹', 'GBP': '£', 'JPY': '¥', 
-                        'CAD': 'CA$', 'AUD': 'A$', 'SGD': 'S$', 'CHF': 'Fr', 'AED': 'DH',
-                        'SAR': 'SR', 'QAR': 'QR', 'OMR': 'RO', 'BHD': 'BD', 'KWD': 'KD'
-                      };
-                      setForm({...form, settings: {...form.settings, currency: val, currencySymbol: symbols[val] || '$'}});
-                    }}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setForm({...form, settings: {...form.settings, currency: val, currencySymbol: CURRENCY_SYMBOLS[val] || '$'}});
+                        // Update bank details based on new currency
+                        const matchingBank = (bankAccounts || []).find(b => b.currency === val);
+                        setSelectedBankDetails(matchingBank || null);
+                      }}
                   >
-                    <option value="USD">United States Dollar (USD, $)</option>
-                    <option value="EUR">Euro (EUR, €)</option>
-                    <option value="INR">Indian Rupee (INR, ₹)</option>
-                    <option value="GBP">British Pound (GBP, £)</option>
-                    <option value="JPY">Japanese Yen (JPY, ¥)</option>
-                    <option value="CAD">Canadian Dollar (CAD, CA$)</option>
-                    <option value="AUD">Australian Dollar (AUD, A$)</option>
-                    <option value="SGD">Singapore Dollar (SGD, S$)</option>
-                    <option value="CHF">Swiss Franc (CHF, Fr)</option>
-                    <option value="AED">UAE Dirham (AED, DH)</option>
-                    <option value="SAR">Saudi Riyal (SAR, SR)</option>
-                    <option value="QAR">Qatari Riyal (QAR, QR)</option>
-                    <option value="OMR">Omani Rial (OMR, RO)</option>
-                    <option value="BHD">Bahraini Dinar (BHD, BD)</option>
-                    <option value="KWD">Kuwaiti Dinar (KWD, KD)</option>
+                    {CURRENCIES.map(curr => (
+                      <option key={curr.code} value={curr.code}>
+                        {curr.name} ({curr.code}, {curr.symbol})
+                      </option>
+                    ))}
                   </select>
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] pointer-events-none">⌄</span>
                 </div>
@@ -671,8 +683,9 @@ const InvoiceForm = () => {
                 <label className="text-[11px] font-bold text-[#6B7280] uppercase tracking-[1.5px]">Number Format</label>
                 <div className="relative mt-1">
                   <select 
-                    className="w-[180px] h-10 border border-[#E4E4E0] rounded-[5px] px-3 text-[13px] font-bold text-[#0C0E10] outline-none appearance-none bg-white cursor-pointer"
+                    className={`w-[180px] h-10 border border-[#E4E4E0] rounded-[5px] px-3 text-[13px] font-bold text-[#0C0E10] outline-none appearance-none bg-white ${isSubmitted ? 'cursor-default bg-[#FAFAF8]' : 'focus:border-[#95BF47] cursor-pointer'}`}
                     value={form.settings.decimals ?? 2}
+                    disabled={isSubmitted}
                     onChange={e => setForm({...form, settings: {...form.settings, decimals: parseInt(e.target.value)}})}
                   >
                     <option value="0">0 (1234)</option>
@@ -824,7 +837,7 @@ const InvoiceForm = () => {
                           {units.filter(u => !['Product', 'Service', 'Hours', 'Days', 'Box', 'Nos', 'per SKU'].includes(u.name)).map(u => (
                             <option key={u.id || u._id} value={u.name}>{u.name}</option>
                           ))}
-                          <option value="CUSTOM">+ Custom</option>
+                          {!isSubmitted && <option value="CUSTOM">+ Custom</option>}
                         </select>
                       </div>
                     </td>
@@ -847,7 +860,7 @@ const InvoiceForm = () => {
                     </td>
                     <td className="p-4 px-3">
                       <div className="flex items-center justify-end gap-2">
-                        <span className="text-[14px] text-[#6B7280]">{form.settings.currencySymbol}</span>
+                        <span className="text-[14px] text-[#6B7280]">{CURRENCY_SYMBOLS[form.settings.currency] || '$'}</span>
                         <input 
                           className="w-[100px] text-[14px] text-[#0C0E10] font-bold text-right outline-none bg-transparent disabled:cursor-default"
                           placeholder="0.00"
@@ -914,7 +927,7 @@ const InvoiceForm = () => {
                 <div className="flex justify-between items-center text-[14px]">
                   <span className="text-[#6B7280]">Bank Charges</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-[13px] text-[#6B7280]">{form.settings.currencySymbol}</span>
+                    <span className="text-[13px] text-[#6B7280]">{CURRENCY_SYMBOLS[form.settings.currency] || '$'}</span>
                     <input 
                       className="w-20 h-8 border border-[#E4E4E0] rounded-[5px] px-2 text-[13px] font-bold text-right outline-none focus:border-[#95BF47] disabled:bg-[#FAFAF8] disabled:cursor-default"
                       value={form.totals.bankCharges}
@@ -1002,7 +1015,7 @@ const InvoiceForm = () => {
                   <span className="text-[13px] font-bold text-[#95BF47]">Add Authorized Signature</span>
                 </>
               )}
-              <input type="file" ref={signatureInputRef} className="hidden" onChange={e => handleFileChange(e, 'signature')} />
+              <input type="file" ref={signatureInputRef} className="hidden" onChange={e => !isSubmitted && handleFileChange(e, 'signature')} />
             </div>
           </div>
 
@@ -1010,7 +1023,7 @@ const InvoiceForm = () => {
           <div className="bg-white border border-[#E4E4E0] rounded-[5px]">
             <div className="p-3 px-5 border-b border-[#E4E4E0] flex justify-between items-center">
               <span className="text-[14px] font-bold text-[#0C0E10] font-heading">Terms and Conditions</span>
-              <button className="text-[#6B7280] hover:text-[#0C0E10]">×</button>
+              {!isSubmitted && <button className="text-[#6B7280] hover:text-[#0C0E10]">×</button>}
             </div>
             <div className="p-2 space-y-1">
               {form.totals.terms.map((term, i) => (
@@ -1113,7 +1126,7 @@ const InvoiceForm = () => {
           </>
         )}
         <button 
-          onClick={() => handleSave('draft', 'preview')}
+          onClick={() => handleSave(invoiceStatus, 'preview')}
           className="h-10 px-5 border border-[#02172E] bg-white text-[#02172E] rounded-[5px] text-[13px] font-bold hover:bg-[#FAFAF8] transition-all"
         >
           Preview PDF

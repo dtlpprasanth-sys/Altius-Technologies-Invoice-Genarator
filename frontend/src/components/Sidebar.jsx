@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  LayoutDashboard, FileText, Users, LogOut, Zap, 
+  LayoutDashboard, FileText, Users, LogOut,
   ChevronLeft, ChevronRight, Box, User, Shield
 } from 'lucide-react';
 
@@ -35,7 +35,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     >
       {/* Logo Area */}
       <div className="sidebar-logo">
-        <Zap className="bolt" size={18} fill="currentColor" />
+        <img src="/logo-symbol.png" alt="Logo" className="w-[32px] h-[32px] mr-2 object-contain" />
         <span className="sidebar-logo-text uppercase tracking-wider">Nxt Invoice</span>
       </div>
       <div className="sidebar-accent"></div>

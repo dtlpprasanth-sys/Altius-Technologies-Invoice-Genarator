@@ -5,7 +5,7 @@ import { formatCurrency, formatDate } from '../utils/helpers';
 import { 
   Plus, Search, Trash2, Eye, Download, 
   FileText, Bell, MoreVertical, 
-  Send, FileEdit, Trash, ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Copy, CheckCircle
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -13,10 +13,11 @@ import ConfirmDialog from '../components/ConfirmDialog';
 const STATUSES = [
   { key: 'all',   label: 'All' },
   { key: 'draft', label: 'Draft' },
-  { key: 'sent',  label: 'Submitted' }
+  { key: 'sent',  label: 'Submitted' },
+  { key: 'paid',  label: 'Paid (Payment)' }
 ];
 
-const InvoiceList = () => {
+const InvoiceList = ({ type = 'invoice' }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialSearch = searchParams.get('search') || '';
@@ -39,6 +40,7 @@ const InvoiceList = () => {
       const params = { 
         search, 
         status, 
+        type,
         startDate, 
         endDate, 
         page: currentPage, 
@@ -85,6 +87,17 @@ const InvoiceList = () => {
     } catch { toast.error('Delete failed'); }
   };
 
+  const handleMarkAsPaid = async (id, e) => {
+    e.stopPropagation();
+    try {
+      await invoiceApi.markAsPaid(id);
+      toast.success('Invoice marked as paid');
+      fetchInvoices();
+    } catch (error) {
+      toast.error('Failed to update status');
+    }
+  };
+
   const handleDownload = async (id, num, e) => {
     e.stopPropagation();
     setDownloading(id);
@@ -100,18 +113,41 @@ const InvoiceList = () => {
     finally { setDownloading(null); }
   };
 
+  const handleDuplicate = async (id, e) => {
+    e.stopPropagation();
+    try {
+      const { data } = await invoiceApi.duplicate(id);
+      toast.success(`Invoice duplicated! New Invoice: ${data.invoiceNumber}`);
+      fetchInvoices();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Duplication failed');
+    }
+  };
+
   const getStatusClass = (s) => {
     const st = s?.toLowerCase();
     if (st === 'draft') return 'status-draft';
-    if (st === 'sent')  return 'status-sent';  // Submitted
+    if (st === 'sent' || st === 'paid') return 'status-paid';
     return 'status-pending';
   };
 
   const getStatusLabel = (s) => {
     const st = s?.toLowerCase();
-    if (st === 'sent') return 'Submitted';
+    if (st === 'sent' || st === 'paid') return 'Submitted';
     if (st === 'draft') return 'Draft';
     return s || 'Draft';
+  };
+
+  const getPaymentStatusClass = (s) => {
+    const st = s?.toLowerCase();
+    if (st === 'paid') return 'status-paid';
+    return 'status-pending'; // Unpaid
+  };
+
+  const getPaymentStatusLabel = (s) => {
+    if (!s || s === 'unpaid') return 'Unpaid';
+    if (s === 'paid') return 'Paid';
+    return s;
   };
 
   return (
@@ -120,12 +156,12 @@ const InvoiceList = () => {
       {/* PAGE HEADER */}
       <header className="h-16 bg-white border-b border-[#E4E4E0] flex items-center justify-between px-8 sticky top-0 z-20">
         <div className="page-header-left">
-          <h1 className="text-[26px] font-bold text-[#0C0E10] leading-tight font-heading">Invoices</h1>
-          <p className="text-[13px] text-[#6B7280] mt-0.5 font-medium">Manage and track your billings</p>
+          <h1 className="text-[26px] font-bold text-[#0C0E10] leading-tight font-heading">{type === 'proforma' ? 'Proforma Invoices' : 'Invoices'}</h1>
+          <p className="text-[13px] text-[#6B7280] mt-0.5 font-medium">{type === 'proforma' ? 'Manage and track your proforma billings' : 'Manage and track your billings'}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/invoices/new" className="btn-green-sm ml-2 flex items-center gap-2 h-9 px-4 rounded-[5px] bg-[#95BF47] text-[#02172E] font-bold text-sm hover:bg-[#85AF37] transition-all">
-            <Plus size={16} strokeWidth={3} /> Create Invoice
+          <Link to={type === 'proforma' ? '/proforma-invoices/new' : '/invoices/new'} className="btn-green-sm ml-2 flex items-center gap-2 h-9 px-4 rounded-[5px] bg-[#95BF47] text-[#02172E] font-bold text-sm hover:bg-[#85AF37] transition-all">
+            <Plus size={16} strokeWidth={3} /> Create {type === 'proforma' ? 'Proforma' : 'Invoice'}
           </Link>
         </div>
       </header>
@@ -229,7 +265,8 @@ const InvoiceList = () => {
                     <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[140px]">Due Date</th>
                     <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[160px] text-right">Amount</th>
                     <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[140px]">Status</th>
-                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[100px] text-center">Actions</th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[140px]">Payment</th>
+                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[150px] text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E4E4E0]">
@@ -237,7 +274,7 @@ const InvoiceList = () => {
                       <tr 
                         key={inv.id || inv._id} 
                         className="hover:bg-[#F3F8E8] transition-all group cursor-pointer"
-                        onClick={() => navigate(`/invoices/${inv.id || inv._id}/edit`)}
+                        onClick={() => navigate(type === 'proforma' ? `/proforma-invoices/${inv.id || inv._id}/edit` : `/invoices/${inv.id || inv._id}/edit`)}
                       >
                       <td className="px-6 py-4 text-[13px] font-bold text-[#6B7280]">{(currentPage - 1) * 10 + index + 1}</td>
                       <td className="px-6 py-4 text-[14px] font-bold text-[#0C0E10] whitespace-nowrap">{inv.invoiceNumber}</td>
@@ -250,11 +287,20 @@ const InvoiceList = () => {
                           {getStatusLabel(inv.status)}
                         </span>
                       </td>
+                      <td className="px-6 py-4">
+                        <span className={`status-badge ${getPaymentStatusClass(inv.paymentStatus)}`}>
+                          {getPaymentStatusLabel(inv.paymentStatus)}
+                        </span>
+                      </td>
                       <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-3 transition-all">
-                          <button onClick={() => navigate(`/invoices/${inv.id || inv._id}`)} className="text-[#6B7280] hover:text-[#95BF47] transition-all" title="View"><Eye size={16}/></button>
-                          <button onClick={(e) => handleDownload(inv.id || inv._id, inv.invoiceNumber, e)} className="text-[#6B7280] hover:text-[#95BF47] transition-all" title="Download">{downloading===(inv.id || inv._id) ? <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-[#95BF47] rounded-full animate-spin"/> : <Download size={16}/>}</button>
-                          <button onClick={(e) => handleDelete(inv.id || inv._id, inv.invoiceNumber, e)} className="text-[#6B7280] hover:text-[#CC3A3A] transition-all" title="Delete"><Trash size={16}/></button>
+                        <div className="flex items-center justify-center gap-1 transition-all">
+                          <button onClick={() => navigate(type === 'proforma' ? `/proforma-invoices/${inv.id || inv._id}` : `/invoices/${inv.id || inv._id}`)} className="p-1.5 text-[#6B7280] hover:text-[#95BF47] hover:bg-[#F3F8E8] rounded-md transition-all" title="View"><Eye size={16}/></button>
+                          <button onClick={(e) => handleDownload(inv.id || inv._id, inv.invoiceNumber, e)} className="p-1.5 text-[#6B7280] hover:text-[#95BF47] hover:bg-[#F3F8E8] rounded-md transition-all" title="Download">{downloading===(inv.id || inv._id) ? <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-[#95BF47] rounded-full animate-spin"/> : <Download size={16}/>}</button>
+                          <button onClick={(e) => handleDuplicate(inv.id || inv._id, e)} className="p-1.5 text-[#6B7280] hover:text-[#95BF47] hover:bg-[#F3F8E8] rounded-md transition-all" title="Duplicate"><Copy size={16}/></button>
+                          {inv.paymentStatus !== 'paid' && (
+                            <button onClick={(e) => handleMarkAsPaid(inv.id || inv._id, e)} className="p-1.5 text-[#6B7280] hover:text-[#15803D] hover:bg-[#DCFCE7] rounded-md transition-all" title="Mark as Paid"><CheckCircle size={16}/></button>
+                          )}
+                          <button onClick={(e) => handleDelete(inv.id || inv._id, inv.invoiceNumber, e)} className="p-1.5 text-[#6B7280] hover:text-[#CC3A3A] hover:bg-[#FEF2F2] rounded-md transition-all" title="Delete"><Trash2 size={16}/></button>
                         </div>
                       </td>
                     </tr>

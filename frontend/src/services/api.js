@@ -52,6 +52,8 @@ export const invoiceApi = {
   delete: (id) => api.delete(`/invoices/${id}`),
   generateNumber: () => api.get('/invoices/generate-number'),
   downloadPDF: (id) => api.get(`/invoices/${id}/pdf`, { responseType: 'blob' }),
+  duplicate: (id) => api.post(`/invoices/${id}/duplicate`),
+  markAsPaid: (id) => api.post(`/invoices/${id}/paid`),
 };
 
 // Settings

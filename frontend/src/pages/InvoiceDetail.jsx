@@ -22,7 +22,7 @@ const InvoiceDetail = () => {
         setInvoice(invRes.data);
         if (setRes.data) setSettings(setRes.data);
       })
-      .catch(() => toast.error('Invoice not found'))
+      .catch(() => toast.error(`Invoice not found`))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -33,7 +33,7 @@ const InvoiceDetail = () => {
       await invoiceApi.delete(id);
       toast.success('Deleted successfully');
       navigate('/invoices');
-    } catch { toast.error('Error deleting invoice'); }
+    } catch { toast.error(`Error deleting invoice`); }
   };
 
   const handlePDF = async () => {
@@ -53,7 +53,7 @@ const InvoiceDetail = () => {
 
   const statusBadge = (s) => {
     const st = s?.toLowerCase();
-    if (st === 'sent') {
+    if (st === 'sent' || st === 'paid') {
       return <span className="bg-[#F3F8E8] text-[#95BF47] text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-[#95BF47]/30">Submitted</span>;
     }
     if (st === 'draft') {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { settingsApi } from '../services/api';
+import { CURRENCIES } from '../utils/currencies';
 import { toast } from 'react-toastify';
 import { 
   Building2, Mail, Phone, Landmark, Hash, 
@@ -296,13 +297,186 @@ const Settings = () => {
                     <span className="text-[11px] text-[#6B7280] font-medium">Standard numbering and prefixes</span>
                   </div>
                 </div>
-                <div className="p-6 grid grid-cols-2 gap-x-10 gap-y-6">
-                  <DataField label="Bank Name" value={settings.bankName} field="bankName" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                  <DataField label="Account Holder Name" value={settings.accountName} field="accountName" fullWidth isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                  <DataField label="Account Number" value={settings.accountNumber} field="accountNumber" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                  <DataField label="IFSC Code" value={settings.ifscCode} field="ifscCode" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                  <DataField label="IBAN Number" value={settings.iban} field="iban" isEditing={isEditing} settings={settings} setSettings={setSettings} />
-                  <DataField label="SWIFT Code" value={settings.swiftCode} field="swiftCode" isEditing={isEditing} settings={settings} setSettings={setSettings} />
+                <div className="p-6">
+                  <div className="space-y-6">
+                    {(settings.bankAccounts || []).map((account, index) => (
+                      <div key={account.id || index} className="p-5 border border-[#E4E4E0] rounded-[12px] bg-[#FAFAF8]/30 relative group/bank">
+                        {isEditing && (
+                          <button
+                            onClick={() => {
+                              const newAccounts = settings.bankAccounts.filter((_, i) => i !== index);
+                              setSettings({ ...settings, bankAccounts: newAccounts });
+                            }}
+                            className="absolute top-4 right-4 p-2 text-[#D0D0CA] hover:text-red-500 hover:bg-red-50 transition-all rounded-[6px] opacity-0 group-hover/bank:opacity-100"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                        
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="col-span-2 md:col-span-1 space-y-1.5">
+                            <label className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#6B7280]">Currency</label>
+                            {isEditing ? (
+                              <select
+                                className="w-full h-11 bg-white border border-[#E4E4E0] rounded-[5px] px-4 text-[14px] outline-none focus:border-[#95BF47] font-bold"
+                                value={account.currency || 'INR'}
+                                onChange={(e) => {
+                                  const newAccounts = [...settings.bankAccounts];
+                                  newAccounts[index].currency = e.target.value;
+                                  setSettings({ ...settings, bankAccounts: newAccounts });
+                                }}
+                              >
+                                <option value="">Select Currency</option>
+                                {CURRENCIES.map(curr => (
+                                  <option key={curr.code} value={curr.code}>{curr.name} ({curr.code})</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <div className="h-11 flex items-center">
+                                <span className="text-[14px] font-bold text-[#95BF47] bg-[#F3F8E8] px-3 py-1 rounded-full">{account.currency || 'INR'}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="col-span-2 md:col-span-1 space-y-1.5">
+                            <label className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#6B7280]">Bank Name</label>
+                            {isEditing ? (
+                              <input
+                                className="w-full h-11 bg-white border border-[#E4E4E0] rounded-[5px] px-4 text-[14px] outline-none focus:border-[#95BF47] font-medium"
+                                value={account.bankName || ''}
+                                onChange={(e) => {
+                                  const newAccounts = [...settings.bankAccounts];
+                                  newAccounts[index].bankName = e.target.value;
+                                  setSettings({ ...settings, bankAccounts: newAccounts });
+                                }}
+                                placeholder="Enter bank name"
+                              />
+                            ) : (
+                              <p className="text-[14px] font-bold text-[#0C0E10] py-2">{account.bankName || 'Not set'}</p>
+                            )}
+                          </div>
+
+                          <div className="col-span-2 md:col-span-1 space-y-1.5">
+                            <label className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#6B7280]">Account Holder Name</label>
+                            {isEditing ? (
+                              <input
+                                className="w-full h-11 bg-white border border-[#E4E4E0] rounded-[5px] px-4 text-[14px] outline-none focus:border-[#95BF47] font-medium"
+                                value={account.accountName || ''}
+                                onChange={(e) => {
+                                  const newAccounts = [...settings.bankAccounts];
+                                  newAccounts[index].accountName = e.target.value;
+                                  setSettings({ ...settings, bankAccounts: newAccounts });
+                                }}
+                                placeholder="Name as per bank records"
+                              />
+                            ) : (
+                              <p className="text-[14px] font-bold text-[#0C0E10] py-2">{account.accountName || 'Not set'}</p>
+                            )}
+                          </div>
+
+                          <div className="col-span-2 md:col-span-1 space-y-1.5">
+                            <label className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#6B7280]">Account Number</label>
+                            {isEditing ? (
+                              <input
+                                className="w-full h-11 bg-white border border-[#E4E4E0] rounded-[5px] px-4 text-[14px] outline-none focus:border-[#95BF47] font-medium"
+                                value={account.accountNumber || ''}
+                                onChange={(e) => {
+                                  const newAccounts = [...settings.bankAccounts];
+                                  newAccounts[index].accountNumber = e.target.value;
+                                  setSettings({ ...settings, bankAccounts: newAccounts });
+                                }}
+                                placeholder="Enter account number"
+                              />
+                            ) : (
+                              <p className="text-[14px] font-bold text-[#0C0E10] py-2">{account.accountNumber || 'Not set'}</p>
+                            )}
+                          </div>
+
+                          <div className="col-span-2 md:col-span-1 space-y-1.5">
+                            <label className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#6B7280]">IFSC / Routing Code</label>
+                            {isEditing ? (
+                              <input
+                                className="w-full h-11 bg-white border border-[#E4E4E0] rounded-[5px] px-4 text-[14px] outline-none focus:border-[#95BF47] font-medium"
+                                value={account.ifscCode || ''}
+                                onChange={(e) => {
+                                  const newAccounts = [...settings.bankAccounts];
+                                  newAccounts[index].ifscCode = e.target.value;
+                                  setSettings({ ...settings, bankAccounts: newAccounts });
+                                }}
+                                placeholder="e.g. HDFC0001234"
+                              />
+                            ) : (
+                              <p className="text-[14px] font-bold text-[#0C0E10] py-2">{account.ifscCode || 'Not set'}</p>
+                            )}
+                          </div>
+
+                          <div className="col-span-2 md:col-span-1 space-y-1.5">
+                            <label className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#6B7280]">Swift Code (for International)</label>
+                            {isEditing ? (
+                              <input
+                                className="w-full h-11 bg-white border border-[#E4E4E0] rounded-[5px] px-4 text-[14px] outline-none focus:border-[#95BF47] font-medium"
+                                value={account.swiftCode || ''}
+                                onChange={(e) => {
+                                  const newAccounts = [...settings.bankAccounts];
+                                  newAccounts[index].swiftCode = e.target.value;
+                                  setSettings({ ...settings, bankAccounts: newAccounts });
+                                }}
+                                placeholder="Enter swift code"
+                              />
+                            ) : (
+                              <p className="text-[14px] font-bold text-[#0C0E10] py-2">{account.swiftCode || 'Not set'}</p>
+                            )}
+                          </div>
+
+                          <div className="col-span-2 space-y-1.5">
+                            <label className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#6B7280]">IBAN Number</label>
+                            {isEditing ? (
+                              <input
+                                className="w-full h-11 bg-white border border-[#E4E4E0] rounded-[5px] px-4 text-[14px] outline-none focus:border-[#95BF47] font-medium"
+                                value={account.iban || ''}
+                                onChange={(e) => {
+                                  const newAccounts = [...settings.bankAccounts];
+                                  newAccounts[index].iban = e.target.value;
+                                  setSettings({ ...settings, bankAccounts: newAccounts });
+                                }}
+                                placeholder="Enter IBAN if applicable"
+                              />
+                            ) : (
+                              <p className="text-[14px] font-bold text-[#0C0E10] py-2">{account.iban || 'Not set'}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {isEditing && (
+                      <button
+                        onClick={() => {
+                          const newAccount = { 
+                            id: Date.now(), 
+                            currency: 'INR',
+                            bankName: '',
+                            accountName: '',
+                            accountNumber: '',
+                            ifscCode: '',
+                            iban: '',
+                            swiftCode: ''
+                          };
+                          setSettings({ ...settings, bankAccounts: [...(settings.bankAccounts || []), newAccount] });
+                        }}
+                        className="flex items-center gap-2 text-[#95BF47] text-[14px] font-bold hover:bg-[#F3F8E8] px-6 py-3 rounded-[8px] transition-all border border-dashed border-[#95BF47]/30 w-full justify-center"
+                      >
+                        <Plus size={18} />
+                        Add New Bank Account
+                      </button>
+                    )}
+
+                    {!isEditing && (!settings.bankAccounts || settings.bankAccounts.length === 0) && (
+                      <div className="p-8 text-center bg-[#FAFAF8] rounded-[12px] border border-dashed border-[#E4E4E0]">
+                        <p className="text-[13px] font-medium text-[#6B7280]">No bank accounts added yet.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

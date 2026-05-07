@@ -1,17 +1,30 @@
 const { Invoice, Client, Settings } = require('../models');
+const { CURRENCY_SYMBOLS } = require('../utils/currencies');
 const { Op } = require('sequelize');
 const puppeteer = require('puppeteer');
 
 const getInvoices = async (req, res) => {
   try {
-    const { search, status, startDate, endDate, page = 1, limit = 10 } = req.query;
+    const { search, status, type, startDate, endDate, page = 1, limit = 10 } = req.query;
     const where = {};
+
+    // Type filter
+    if (type) {
+      where.type = type;
+    } else {
+      where.type = 'invoice';
+    }
 
     // Status filter
     if (status && status !== 'all') {
-      where.status = status;
+      if (status === 'paid') {
+        where.paymentStatus = 'paid';
+      } else {
+        where.status = status;
+      }
     } else {
-      where.status = { [Op.in]: ['draft', 'sent'] };
+      // For 'all', we don't necessarily filter by status unless we want to exclude some
+      // but let's keep it consistent
     }
 
     // Search filter
@@ -62,11 +75,25 @@ const createInvoice = async (req, res) => {
     const existing = await Invoice.findOne({ where: { invoiceNumber } });
     if (existing) return res.status(400).json({ message: 'Invoice number already exists' });
 
-    const invoice = await Invoice.create({ ...req.body, userId: req.user.id });
+    const invoiceData = { ...req.body, userId: req.user.id };
+    
+    // Explicitly map business details to top-level fields for persistence
+    if (req.body.businessDetails) {
+      invoiceData.businessName = req.body.businessDetails.businessName;
+      invoiceData.businessAddress = req.body.businessDetails.streetAddress || req.body.businessDetails.address;
+      invoiceData.businessGstin = req.body.businessDetails.gstin;
+      invoiceData.businessPan = req.body.businessDetails.pan;
+      invoiceData.ieCode = req.body.businessDetails.ieCode;
+      invoiceData.cin = req.body.businessDetails.cin;
+      invoiceData.website = req.body.businessDetails.website;
+      invoiceData.lutDetails = req.body.businessDetails.lutDetails;
+    }
+
+    const invoice = await Invoice.create(invoiceData);
     
     // Update counter in settings (global settings)
     const settings = await Settings.findOne();
-    if (settings) {
+    if (settings && invoice.type !== 'proforma') {
       const current = settings.invoiceCounter || '1';
       const length = current.length;
       const next = (parseInt(current, 10) + 1).toString().padStart(length, '0');
@@ -92,6 +119,20 @@ const getInvoiceById = async (req, res) => {
   }
 };
 
+const markAsPaid = async (req, res) => {
+  try {
+    const invoice = await Invoice.findByPk(req.params.id);
+    if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+    
+    invoice.paymentStatus = 'paid';
+    await invoice.save();
+    
+    res.json({ message: 'Invoice marked as paid', invoice });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const updateInvoice = async (req, res) => {
   try {
     const invoice = await Invoice.findOne({
@@ -99,12 +140,27 @@ const updateInvoice = async (req, res) => {
     });
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     
-    await invoice.update(req.body);
+    const updateData = { ...req.body };
+    
+    // Explicitly map business details for persistence during update
+    if (req.body.businessDetails) {
+      updateData.businessName = req.body.businessDetails.businessName;
+      updateData.businessAddress = req.body.businessDetails.streetAddress || req.body.businessDetails.address;
+      updateData.businessGstin = req.body.businessDetails.gstin;
+      updateData.businessPan = req.body.businessDetails.pan;
+      updateData.ieCode = req.body.businessDetails.ieCode;
+      updateData.cin = req.body.businessDetails.cin;
+      updateData.website = req.body.businessDetails.website;
+      updateData.lutDetails = req.body.businessDetails.lutDetails;
+    }
+
+    await invoice.update(updateData);
     res.json(invoice);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
+
 
 const deleteInvoice = async (req, res) => {
   try {
@@ -229,7 +285,7 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
   const terms = invoice.terms || [];
 
   const currency = invoice.currency || 'USD';
-  const symbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ' };
+  const symbols = CURRENCY_SYMBOLS;
   const sym = symbols[currency] || currency + ' ';
   const numLocale = invoice.numberFormat ?? biz.numberFormat ?? 'en-US';
   const decimals  = invoice.decimals ?? biz.decimals ?? 2;
@@ -253,16 +309,21 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
   const lutDate = biz.lutDate || biz.lutRefDate || '';
   const lut = invoice.invoiceSubTitle || invoice.lutDetails || `SUPPLY MEANT FOR EXPORT UNDER BOND OR LETTER OF UNDERTAKING WITHOUT PAYMENT OF INTEGRATED TAX${lutArn ? `  LUT Ref: ARN – ${lutArn} dated ${formatDate(lutDate)}` : ''}`;
 
+  const isDraft = invoice.status === 'draft';
+  const currentBiz = isDraft ? biz : (invoice.businessDetails || biz);
+
   // Helper to prevent redundant address lines
-  const cityStateZip = [biz.city, biz.state].filter(Boolean).join(', ') + (biz.pincode ? ' – ' + biz.pincode : '');
-  const countryLine = biz.country || 'India';
+  const cityStateZip = [currentBiz.city, currentBiz.state].filter(Boolean).join(', ') + (currentBiz.pincode ? ' – ' + currentBiz.pincode : '');
+  const countryLine = currentBiz.country || 'India';
   
   const headerLines = [];
-  const rawAddr = biz.address || biz.streetAddress || (biz.registeredOffice ? null : invoice.businessAddress) || '';
+  const rawAddr = isDraft
+    ? (biz.address || biz.streetAddress || invoice.businessAddress || '')
+    : (invoice.businessAddress || biz.address || biz.streetAddress || '');
   
   // If the raw address doesn't already contain the city/state, add them as separate lines
   headerLines.push(rawAddr);
-  if (cityStateZip && !rawAddr.includes(biz.city || '___') && !rawAddr.includes(biz.state || '___')) {
+  if (cityStateZip && !rawAddr.includes(currentBiz.city || '___') && !rawAddr.includes(currentBiz.state || '___')) {
     headerLines.push(cityStateZip);
   }
   if (countryLine && !rawAddr.includes(countryLine)) {
@@ -270,9 +331,9 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
   }
 
   const billedByLines = [
-    biz.address || biz.streetAddress || (biz.registeredOffice ? null : invoice.businessAddress),
-    [biz.city, biz.state].filter(Boolean).join(', ') + (biz.pincode ? ', ' + biz.pincode : ''),
-    biz.country
+    isDraft ? (biz.address || biz.streetAddress || invoice.businessAddress) : (invoice.businessAddress || biz.address || biz.streetAddress),
+    [isDraft ? biz.city : (invoice.businessDetails?.city || biz.city), isDraft ? biz.state : (invoice.businessDetails?.state || biz.state)].filter(Boolean).join(', ') + (isDraft ? (biz.pincode || '') : (invoice.businessDetails?.postalCode || biz.pincode ? ', ' + (invoice.businessDetails?.postalCode || biz.pincode) : '')),
+    isDraft ? (biz.country || 'India') : (invoice.businessDetails?.country || biz.country || 'India')
   ].filter(Boolean);
 
   const billedToLines = [
@@ -302,14 +363,19 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
     { label: currency === 'INR' ? 'Total (INR)' : 'Total Amount in (INR)', v: `₹${fmt(invoice.totalInINR)}`, bold: true }
   ];
 
+  // Get correct bank details based on currency
+  const selectedBank = invoice.bankDetails 
+    || (biz.bankAccounts || []).find(b => b.currency === currency) 
+    || null;
+
   const bankDetails = [
-    { label: 'Account Name', val: biz.accountName || biz.businessName },
-    { label: 'Account Number', val: biz.accountNumber },
-    { label: 'IFSC', val: biz.ifscCode },
-    { label: 'IBAN', val: biz.iban },
-    { label: 'SWIFT Code', val: biz.swiftCode },
-    { label: 'Bank', val: biz.bankName }
-  ].filter(r => r.val);
+    { label: 'Account Name', val: selectedBank.accountName || (selectedBank.currency ? biz.businessName : '') },
+    { label: 'Account Number', val: selectedBank.accountNumber || '' },
+    { label: 'IFSC', val: selectedBank.ifscCode || '' },
+    { label: 'IBAN', val: selectedBank.iban || '' },
+    { label: 'SWIFT Code', val: selectedBank.swiftCode || '' },
+    { label: 'Bank', val: selectedBank.bankName || '' }
+  ];
 
   return `<!DOCTYPE html>
 <html>
@@ -348,10 +414,10 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
         }
       </div>
       <div style="text-align: right; line-height: 1.5; font-size: 9pt;">
-        <div style="font-weight: 700; font-size: 11pt; letter-spacing: 0.03em; margin-bottom: 2px;">${invoice.businessName || biz.businessName}</div>
+        <div style="font-weight: 700; font-size: 11pt; letter-spacing: 0.03em; margin-bottom: 2px;">${isDraft ? (biz.businessName || invoice.businessName) : (invoice.businessName || biz.businessName)}</div>
         ${headerLines.map(l => `<div>${l}</div>`).join('')}
-        ${(biz.phone || invoice.phone) ? `<div>Phone: ${biz.phone || invoice.phone}</div>` : ''}
-        ${(invoice.businessGstin || biz.gstin) ? `<div>GSTIN: ${invoice.businessGstin || biz.gstin}</div>` : ''}
+        ${(isDraft ? (biz.phone || biz.telephone || invoice.businessDetails?.phone) : (invoice.businessDetails?.phone || invoice.businessDetails?.telephone || biz.phone || biz.telephone)) ? `<div>Phone: ${isDraft ? (biz.phone || biz.telephone || invoice.businessDetails?.phone) : (invoice.businessDetails?.phone || invoice.businessDetails?.telephone || biz.phone || biz.telephone)}</div>` : ''}
+        ${(isDraft ? (biz.gstin || invoice.businessGstin) : (invoice.businessGstin || biz.gstin)) ? `<div>GSTIN: ${isDraft ? (biz.gstin || invoice.businessGstin) : (invoice.businessGstin || biz.gstin)}</div>` : ''}
       </div>
     </div>
 
@@ -459,13 +525,12 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
             <td class="b-r" style="padding: 10px 12px; vertical-align: top; width: 50%;">
               <div style="font-size: 8.5pt;"><strong>Total (in words) :</strong><span style="font-weight: 400;"> ${inWords} Only</span></div>
             </td>
-            <td style="padding: 10px 12px; text-align: center; vertical-align: top; width: 50%;">
-              <div style="font-weight: 700; font-size: 9pt; margin-bottom: 6px;">For ${invoice.businessName || biz.businessName}</div>
+            <td style="padding: 10px 12px; text-align: center; vertical-align: top; width: 50%; min-width: 250px;">
+              <div style="font-weight: 700; font-size: 9pt; margin-bottom: 6px; white-space: pre-wrap;">For ${isDraft ? (biz.businessName || invoice.businessName) : (invoice.businessName || biz.businessName)}</div>
               <div style="min-height: 55px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
-                ${(invoice.signatureUrl || biz.signatureUrl) ? `<img src="${invoice.signatureUrl || biz.signatureUrl}" style="max-height: 55px; max-width: 75%; object-fit: contain; mix-blend-mode: multiply;">` : ''}
+                ${(isDraft ? (biz.signatureUrl || invoice.signatureUrl) : (invoice.signatureUrl || biz.signatureUrl)) ? `<img src="${isDraft ? (biz.signatureUrl || invoice.signatureUrl) : (invoice.signatureUrl || biz.signatureUrl)}" style="max-height: 55px; max-width: 75%; object-fit: contain; mix-blend-mode: multiply;">` : ''}
               </div>
               <div style="padding-top: 4px;">
-                <div style="font-size: 7.5pt; color: #6b7280;">Authorized Signatory</div>
                 <div style="font-size: 9pt; font-weight: 700;">Authorised Signatory</div>
               </div>
             </td>
@@ -506,39 +571,78 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
     <div style="width: 100%; padding-top: 12px; font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;">
       <div style="border-top: 3px solid #000; margin-bottom: 8px;"></div>
       <div style="text-align: center; font-size: 9.5pt; font-weight: 700; margin-bottom: 5px; line-height: 1.4;">
-        Regd office : ${biz.registeredOffice || biz.address || invoice.businessAddress || ''}
+        Regd office : ${isDraft ? (biz.registeredOffice || biz.address || invoice.businessAddress || '') : (invoice.businessDetails?.registeredOffice || biz.registeredOffice || biz.address || invoice.businessAddress || '')}
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9pt; margin-bottom: 2px;">
         <div style="text-align: center; white-space: nowrap;">
           <span style="color: #000; font-weight: 700;">PAN: </span>
-          <span style="font-weight: 400; color: #000;">${biz.pan || invoice.businessPan || ''}</span>
+          <span style="font-weight: 400; color: #000;">${isDraft ? (biz.pan || invoice.businessPan || '') : (invoice.businessPan || biz.pan || '')}</span>
         </div>
         <div style="text-align: center; white-space: nowrap;">
           <span style="color: #000; font-weight: 700;">IE Code : </span>
-          <span style="font-weight: 400; color: #000;">${biz.ieCode || invoice.ieCode || ''}</span>
+          <span style="font-weight: 400; color: #000;">${isDraft ? (biz.ieCode || invoice.ieCode || '') : (invoice.ieCode || biz.ieCode || '')}</span>
         </div>
         <div style="text-align: center; white-space: nowrap;">
           <span style="color: #000; font-weight: 700;">CIN: </span>
-          <span style="font-weight: 400; color: #000;">${biz.cin || invoice.cin || ''}</span>
+          <span style="font-weight: 400; color: #000;">${isDraft ? (biz.cin || invoice.cin || '') : (invoice.cin || biz.cin || '')}</span>
         </div>
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9pt; margin-bottom: 2px;">
         <div style="text-align: center; white-space: nowrap;">
           <span style="color: #000; font-weight: 700;">Email :</span>
-          <span style="font-weight: 400; color: #000;">${biz.email || ''}</span>
+          <span style="font-weight: 400; color: #000;">${isDraft ? (biz.email || invoice.businessDetails?.email || '') : (invoice.businessDetails?.email || biz.email || '')}</span>
         </div>
         <div style="text-align: center; white-space: nowrap; font-weight: 400; color: #000;">
-          ${(biz.website || '').replace(/^https?:\/\//, '')}
+          ${((isDraft ? biz.website : (invoice.website || biz.website)) || '').replace(/^https?:\/\//, '')}
         </div>
         <div style="text-align: center; white-space: nowrap;">
           <span style="color: #000; font-weight: 700;">Tel : </span>
-          <span style="font-weight: 400; color: #000;">${biz.telephone || invoice.telephone || biz.phone || invoice.phone || ''}</span>
+          <span style="font-weight: 400; color: #000;">${isDraft ? (biz.telephone || biz.phone || invoice.businessDetails?.telephone || '') : (invoice.businessDetails?.telephone || invoice.businessDetails?.phone || biz.telephone || biz.phone || '')}</span>
         </div>
       </div>
     </div>
   </div>
 </body>
 </html>`;
+};
+
+const duplicateInvoice = async (req, res) => {
+  try {
+    const original = await Invoice.findOne({ where: { id: req.params.id } });
+    if (!original) return res.status(404).json({ message: 'Original invoice not found' });
+
+    // Get next number from settings
+    const settings = await Settings.findOne();
+    let nextNumber = 'INV-001';
+    if (settings) {
+      const prefix = settings.invoicePrefix || 'INV';
+      const counter = settings.invoiceCounter || '001';
+      const year = settings.fiscalYear ? `/${settings.fiscalYear}` : '';
+      nextNumber = `${prefix}-${counter}${year}`;
+
+      // Increment counter for next time
+      const length = counter.length;
+      const next = (parseInt(counter, 10) + 1).toString().padStart(length, '0');
+      settings.invoiceCounter = next;
+      await settings.save();
+    }
+
+    // Create copy (exclude id, invoiceNumber, status, and timestamps)
+    const { 
+      id, invoiceNumber, status, createdAt, updatedAt, ...rest 
+    } = original.get({ plain: true });
+
+    const duplicated = await Invoice.create({
+      ...rest,
+      invoiceNumber: nextNumber,
+      status: 'draft',
+      userId: req.user.id
+    });
+
+    res.status(201).json(duplicated);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 module.exports = {
@@ -548,5 +652,7 @@ module.exports = {
   updateInvoice,
   deleteInvoice,
   getNextInvoiceNumber,
-  downloadInvoicePDF
+  downloadInvoicePDF,
+  duplicateInvoice,
+  markAsPaid
 };

@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatDate, numberToWords } from '../utils/helpers';
+import { CURRENCY_SYMBOLS } from '../utils/currencies';
 import InvoiceFooter from './InvoiceFooter';
 
 /* ── Helpers ── */
@@ -11,14 +12,26 @@ const F = "'Inter','Helvetica Neue',Arial,sans-serif";
 
 /* ── Shared page header (logo + company address) ── */
 const PageHeader = ({ settings, data }) => {
-  const logo = data.logoUrl || settings.logoUrl;
-  const rawAddr = settings.address || settings.streetAddress || '';
-  const cityState = [settings.city, settings.state].filter(Boolean).join(', ') + 
-                   (settings.zipCode || settings.pincode ? ' – ' + (settings.zipCode || settings.pincode) : '');
-  const country = settings.country || 'India';
+  const isDraft = data.status === 'draft';
+  
+  // For drafts, prioritize settings. For submitted, prioritize snapshot.
+  const bizName = isDraft ? (settings.businessName || data.businessName) : (data.businessName || settings.businessName);
+  const logo = isDraft ? (settings.logoUrl || data.logoUrl) : (data.logoUrl || settings.logoUrl);
+  const rawAddr = isDraft 
+    ? (settings.address || settings.streetAddress || data.businessAddress || '') 
+    : (data.businessAddress || settings.address || settings.streetAddress || '');
+  
+  const city = isDraft ? (settings.city || data.businessDetails?.city || '') : (data.businessDetails?.city || settings.city || '');
+  const state = isDraft ? (settings.state || data.businessDetails?.state || '') : (data.businessDetails?.state || settings.state || '');
+  const zip = isDraft ? (settings.zipCode || settings.pincode || data.businessDetails?.postalCode || '') : (data.businessDetails?.postalCode || settings.zipCode || settings.pincode || '');
+  const country = isDraft ? (settings.country || data.businessDetails?.country || 'India') : (data.businessDetails?.country || settings.country || 'India');
+  const gstin = isDraft ? (settings.gstin || data.businessGstin || '') : (data.businessGstin || settings.gstin || '');
+  const phone = isDraft ? (settings.phone || settings.telephone || data.businessDetails?.phone || '') : (data.businessDetails?.phone || settings.phone || settings.telephone || '');
+
+  const cityState = [city, state].filter(Boolean).join(', ') + (zip ? ' – ' + zip : '');
 
   const lines = [rawAddr];
-  if (cityState && !rawAddr.includes(settings.city || '___') && !rawAddr.includes(settings.state || '___')) {
+  if (cityState && !rawAddr.includes(city || '___') && !rawAddr.includes(state || '___')) {
     lines.push(cityState);
   }
   if (country && !rawAddr.includes(country)) {
@@ -33,10 +46,10 @@ const PageHeader = ({ settings, data }) => {
           : <div style={{ width:120, height:60, background:'#e5e7eb' }} />}
       </div>
       <div style={{ textAlign:'right', lineHeight:1.5, fontSize:'9pt' }}>
-        <div style={{ fontWeight:700, fontSize:'11pt', letterSpacing:'0.03em', marginBottom:2 }}>{settings.businessName}</div>
+        <div style={{ fontWeight:700, fontSize:'11pt', letterSpacing:'0.03em', marginBottom:2 }}>{bizName}</div>
         {finalLines.map((l,i) => <div key={i}>{l}</div>)}
-        {(settings.phone||settings.telephone) && <div>Phone: {settings.phone||settings.telephone}</div>}
-        {settings.gstin && <div>GSTIN: {settings.gstin}</div>}
+        {phone && <div>Phone: {phone}</div>}
+        {gstin && <div>GSTIN: {gstin}</div>}
       </div>
     </div>
   );
@@ -50,7 +63,7 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
   const totals   = data.totals  || {};
   const terms    = data.terms   || totals.terms || [];
 
-  const symbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ' };
+  const symbols = CURRENCY_SYMBOLS;
   const currency    = data.currency    || header.currency    || 'USD';
   const sym         = symbols[currency] || currency + ' ';
   const numLocale = data.numberFormat ?? data.settings?.numberFormat ?? settings?.numberFormat ?? 'en-US';
@@ -82,12 +95,20 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
   const poNoAndDate       = data.poNoAndDate       || header.poNoAndDate       || '';
   const softwareExportType = data.softwareExportType || header.softwareExportType || '';
 
-  const rawByAddr = data.businessAddress || settings.address || settings.streetAddress || '';
-  const byCityState = [settings.city, settings.state].filter(Boolean).join(', ') + (settings.zipCode || settings.pincode ? ', '+(settings.zipCode || settings.pincode) : '');
-  const byCountry = settings.country;
+  const isDraft = data.status === 'draft';
+  const rawByAddr = isDraft 
+    ? (settings.address || settings.streetAddress || data.businessAddress || '') 
+    : (data.businessAddress || settings.address || settings.streetAddress || '');
+    
+  const byCity = isDraft ? (settings.city || data.businessDetails?.city) : (data.businessDetails?.city || settings.city);
+  const byState = isDraft ? (settings.state || data.businessDetails?.state) : (data.businessDetails?.state || settings.state);
+  const byZip = isDraft ? (settings.zipCode || settings.pincode || data.businessDetails?.postalCode) : (data.businessDetails?.postalCode || settings.zipCode || settings.pincode);
+  const byCountry = isDraft ? (settings.country || data.businessDetails?.country) : (data.businessDetails?.country || settings.country);
+  
+  const byCityState = [byCity, byState].filter(Boolean).join(', ') + (byZip ? ', '+byZip : '');
 
   const byLines = [rawByAddr];
-  if (byCityState && !rawByAddr.includes(settings.city || '___') && !rawByAddr.includes(settings.state || '___')) {
+  if (byCityState && !rawByAddr.includes(byCity || '___') && !rawByAddr.includes(byState || '___')) {
     byLines.push(byCityState);
   }
   if (byCountry && !rawByAddr.includes(byCountry)) {
@@ -198,18 +219,18 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
                 {/* Col 2 – Billed By */}
                 <td style={{ borderRight:B, borderBottom:B, padding:'10px 10px', verticalAlign:'top' }}>
                   <div style={{ fontWeight:700, fontSize:'9pt', color:'#444', marginBottom:8 }}>Billed By</div>
-                  <div style={{ fontWeight:700, fontSize:'10pt', marginBottom:4 }}>{settings.businessName}</div>
+                  <div style={{ fontWeight:700, fontSize:'10pt', marginBottom:4 }}>{isDraft ? (settings.businessName || data.businessName) : (data.businessName || settings.businessName)}</div>
                   {finalByLines.map((l,i) => <div key={i} style={{ fontSize:'8.5pt', lineHeight:1.4 }}>{l}</div>)}
-                  {settings.gstin && (
+                  {(isDraft ? (settings.gstin || data.businessGstin) : (data.businessGstin || settings.gstin)) && (
                     <div style={{ marginTop:5, fontSize:'8.5pt' }}>
                       <span style={{ fontWeight:700, color:'#000', marginRight:4 }}>GSTIN:</span>
-                      <span style={{ color:'#000' }}>{settings.gstin}</span>
+                      <span style={{ color:'#000' }}>{isDraft ? (settings.gstin || data.businessGstin) : (data.businessGstin || settings.gstin)}</span>
                     </div>
                   )}
-                  {settings.satelliteStation && (
+                  {(isDraft ? (settings.satelliteStation || data.businessDetails?.satelliteStation) : (data.businessDetails?.satelliteStation || settings.satelliteStation)) && (
                     <div style={{ marginTop:3, fontSize:'8.5pt' }}>
                       <span style={{ fontWeight:700, color:'#000', marginRight:4 }}>Satellite Station:</span>
-                      <span style={{ color:'#000' }}>{settings.satelliteStation}</span>
+                      <span style={{ color:'#000' }}>{isDraft ? (settings.satelliteStation || data.businessDetails?.satelliteStation) : (data.businessDetails?.satelliteStation || settings.satelliteStation)}</span>
                     </div>
                   )}
                 </td>
@@ -302,16 +323,15 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
                     <span style={{ fontWeight:400 }}> {inWords} Only</span>
                   </div>
                 </td>
-                <td style={{ padding:'10px 12px', textAlign:'center', verticalAlign:'top', width:'50%' }}>
-                  <div style={{ fontWeight:700, fontSize:'9pt', marginBottom:6 }}>For {settings.businessName}</div>
+                <td style={{ padding:'10px 12px', textAlign:'center', verticalAlign:'top', width:'50%', minWidth:250 }}>
+                  <div style={{ fontWeight:700, fontSize:'9pt', marginBottom:6, whiteSpace:'pre-wrap' }}>For {isDraft ? (settings.businessName || data.businessName) : (data.businessName || settings.businessName)}</div>
                   <div style={{ minHeight:55, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:4 }}>
-                    {(data.signatureUrl || settings.signatureUrl) && (
-                      <img src={data.signatureUrl || settings.signatureUrl} alt="sig"
-                        style={{ maxHeight:55, maxWidth:'75%', objectFit:'contain', mixBlendMode:'multiply' }} />
+                    {(isDraft ? (settings.signatureUrl || data.signatureUrl) : (data.signatureUrl || settings.signatureUrl)) && (
+                      <img src={isDraft ? (settings.signatureUrl || data.signatureUrl) : (data.signatureUrl || settings.signatureUrl)} alt="sig"
+                        style={{ maxHeight:55, maxWidth:'85%', objectFit:'contain', mixBlendMode:'multiply' }} />
                     )}
                   </div>
                   <div style={{ paddingTop:4 }}>
-                    <div style={{ fontSize:'7.5pt', color:'#6b7280' }}>Authorized Signatory</div>
                     <div style={{ fontSize:'9pt', fontWeight:700 }}>Authorised Signatory</div>
                   </div>
                 </td>
@@ -339,19 +359,25 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
                 <div style={{ fontWeight:700, fontSize:'10pt', marginBottom:10 }}>Bank Details</div>
                 <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'9pt' }}>
                   <tbody>
-                    {[
-                      { label:'Account Name',   val: settings.accountName || settings.businessName },
-                      { label:'Account Number', val: settings.accountNumber },
-                      { label:'IFSC',           val: settings.ifscCode },
-                      { label:'IBAN',           val: settings.iban },
-                      { label:'SWIFT Code',     val: settings.swiftCode },
-                      { label:'Bank',           val: settings.bankName },
-                    ].filter(r => r.val).map((r,i) => (
-                      <tr key={i}>
-                        <td style={{ padding:'4px 0', color:'#000', fontWeight:700, width:130, verticalAlign:'top', textTransform:'uppercase' }}>{r.label}</td>
-                        <td style={{ padding:'4px 0', fontWeight:400, color:'#000', verticalAlign:'top' }}>{r.val}</td>
-                      </tr>
-                    ))}
+                    {(() => {
+                      const bankDetails = data.bankDetails 
+                        || (settings.bankAccounts || []).find(b => b.currency === currency) 
+                        || {};
+                      
+                      return [
+                        { label:'Account Name',   val: bankDetails.accountName || (bankDetails.currency ? settings.businessName : '') },
+                        { label:'Account Number', val: bankDetails.accountNumber || '' },
+                        { label:'IFSC',           val: bankDetails.ifscCode || '' },
+                        { label:'IBAN',           val: bankDetails.iban || '' },
+                        { label:'SWIFT Code',     val: bankDetails.swiftCode || '' },
+                        { label:'Bank',           val: bankDetails.bankName || '' },
+                      ].map((r,i) => (
+                        <tr key={i}>
+                          <td style={{ padding:'4px 0', color:'#000', fontWeight:700, width:130, verticalAlign:'top', textTransform:'uppercase' }}>{r.label}</td>
+                          <td style={{ padding:'4px 0', fontWeight:400, color:'#000', verticalAlign:'top' }}>{r.val}</td>
+                        </tr>
+                      ));
+                    })()}
                   </tbody>
                 </table>
               </td>
@@ -359,7 +385,7 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
           </tbody>
         </table>
 
-        <InvoiceFooter settings={settings} />
+        <InvoiceFooter settings={settings} data={data} />
       </Page>
 
     </div>

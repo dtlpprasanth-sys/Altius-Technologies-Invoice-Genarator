@@ -251,7 +251,10 @@ const Dashboard = () => {
                       axisLine={false} 
                       tickLine={false} 
                       tick={{ fill: '#6B7280', fontSize: 11, fontWeight: 600 }} 
-                      tickFormatter={(val) => `₹${val/1000}k`} 
+                      tickFormatter={(val) => `₹${Math.round(val/100000)}L`}
+                      domain={[0, (dataMax) => Math.max(dataMax || 0, 500000)]}
+                      tickCount={6}
+                      interval={0}
                     />
                     <Tooltip 
                       contentStyle={{ borderRadius: '5px', border: '1px solid #E4E4E0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontFamily: 'Manrope' }}
@@ -299,11 +302,11 @@ const Dashboard = () => {
                         <td className="px-6 py-4 text-[14px] font-bold text-right text-[#0C0E10]">{formatCurrency(inv.total, inv.currency, settings.numberFormat, settings.decimals)}</td>
                         <td className="px-6 py-4">
                           <span className={`status-badge ${
-                            inv.status?.toLowerCase() === 'sent'  ? 'status-sent' :
+                            (inv.status?.toLowerCase() === 'sent' || inv.status?.toLowerCase() === 'paid') ? 'status-paid' :
                             inv.status?.toLowerCase() === 'draft' ? 'status-draft' :
                             'status-pending'
                           }`}>
-                            {inv.status?.toLowerCase() === 'sent' ? 'Submitted' : (inv.status || 'Draft')}
+                            {(inv.status?.toLowerCase() === 'sent' || inv.status?.toLowerCase() === 'paid') ? 'Submitted' : (inv.status || 'Draft')}
                           </span>
                         </td>
                       </tr>

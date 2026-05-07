@@ -35,6 +35,20 @@ const Settings = sequelize.define('Settings', {
   lutDetails: { type: DataTypes.TEXT },
   fiscalYear: { type: DataTypes.STRING },
   softwareExportType: { type: DataTypes.STRING, defaultValue: 'Data Entry and conversion, Software processing, RBI Code: 907' },
+  bankAccounts: {
+    type: DataTypes.TEXT,
+    get() {
+      const rawValue = this.getDataValue('bankAccounts');
+      try {
+        return rawValue ? JSON.parse(rawValue) : [];
+      } catch (e) {
+        return [];
+      }
+    },
+    set(value) {
+      this.setDataValue('bankAccounts', JSON.stringify(value || []));
+    }
+  },
   termsAndConditions: { 
     type: DataTypes.TEXT,
     get() {

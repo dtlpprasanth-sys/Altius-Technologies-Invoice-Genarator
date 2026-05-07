@@ -20,6 +20,14 @@ const Invoice = sequelize.define('Invoice', {
     type: DataTypes.ENUM('draft', 'sent', 'viewed', 'paid', 'partially_paid', 'overdue', 'cancelled'), 
     defaultValue: 'draft' 
   },
+  paymentStatus: {
+    type: DataTypes.ENUM('unpaid', 'paid', 'partially_paid'),
+    defaultValue: 'unpaid'
+  },
+  type: {
+    type: DataTypes.ENUM('invoice', 'proforma'),
+    defaultValue: 'invoice'
+  },
   
   // 2. Business & Client Block
   business: { type: DataTypes.JSONB },
@@ -41,6 +49,7 @@ const Invoice = sequelize.define('Invoice', {
   showShipping: { type: DataTypes.BOOLEAN, defaultValue: false },
   shippingDetails: { type: DataTypes.JSONB },
   placeOfSupply: { type: DataTypes.STRING },
+  bankDetails: { type: DataTypes.JSONB }, // Currency-specific bank info
 
   // 3. Advanced Item Section
   items: { type: DataTypes.JSONB, defaultValue: [] }, 
