@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { settingsApi } from '../services/api';
-import { CURRENCIES } from '../utils/currencies';
+import { CURRENCIES, CURRENCY_SYMBOLS } from '../utils/currencies';
+import CurrencySelect from '../components/CurrencySelect';
 import { toast } from 'react-toastify';
 import { 
   Building2, Mail, Phone, Landmark, Hash, 
@@ -317,20 +318,15 @@ const Settings = () => {
                           <div className="col-span-2 md:col-span-1 space-y-1.5">
                             <label className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#6B7280]">Currency</label>
                             {isEditing ? (
-                              <select
-                                className="w-full h-11 bg-white border border-[#E4E4E0] rounded-[5px] px-4 text-[14px] outline-none focus:border-[#95BF47] font-bold"
+                              <CurrencySelect
+                                className="w-full"
                                 value={account.currency || 'INR'}
-                                onChange={(e) => {
+                                onChange={(val) => {
                                   const newAccounts = [...settings.bankAccounts];
-                                  newAccounts[index].currency = e.target.value;
+                                  newAccounts[index].currency = val;
                                   setSettings({ ...settings, bankAccounts: newAccounts });
                                 }}
-                              >
-                                <option value="">Select Currency</option>
-                                {CURRENCIES.map(curr => (
-                                  <option key={curr.code} value={curr.code}>{curr.name} ({curr.code})</option>
-                                ))}
-                              </select>
+                              />
                             ) : (
                               <div className="h-11 flex items-center">
                                 <span className="text-[14px] font-bold text-[#95BF47] bg-[#F3F8E8] px-3 py-1 rounded-full">{account.currency || 'INR'}</span>

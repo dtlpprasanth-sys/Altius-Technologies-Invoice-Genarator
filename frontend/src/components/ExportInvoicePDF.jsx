@@ -360,9 +360,9 @@ const ExportInvoicePDF = ({ data = {}, settings = {} }) => {
                 <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'9pt' }}>
                   <tbody>
                     {(() => {
-                      const bankDetails = data.bankDetails 
-                        || (settings.bankAccounts || []).find(b => b.currency === currency) 
-                        || {};
+                      const bankDetails = isDraft 
+                        ? ((settings.bankAccounts || []).find(b => b.currency === currency) || {})
+                        : (data.bankDetails || (settings.bankAccounts || []).find(b => b.currency === currency) || {});
                       
                       return [
                         { label:'Account Name',   val: bankDetails.accountName || (bankDetails.currency ? settings.businessName : '') },

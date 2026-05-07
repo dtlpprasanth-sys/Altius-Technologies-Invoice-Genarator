@@ -380,18 +380,18 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
   ];
 
   // Get correct bank details based on currency
-  const selectedBank = invoice.bankDetails 
-    || (biz.bankAccounts || []).find(b => b.currency === currency) 
-    || null;
+  const selectedBank = isDraft
+    ? ((biz.bankAccounts || []).find(b => b.currency === currency) || null)
+    : (invoice.bankDetails || (biz.bankAccounts || []).find(b => b.currency === currency) || null);
 
-  const bankDetails = [
+  const bankDetails = selectedBank ? [
     { label: 'Account Name', val: selectedBank.accountName || (selectedBank.currency ? biz.businessName : '') },
     { label: 'Account Number', val: selectedBank.accountNumber || '' },
     { label: 'IFSC', val: selectedBank.ifscCode || '' },
     { label: 'IBAN', val: selectedBank.iban || '' },
     { label: 'SWIFT Code', val: selectedBank.swiftCode || '' },
     { label: 'Bank', val: selectedBank.bankName || '' }
-  ];
+  ] : [];
 
   return `<!DOCTYPE html>
 <html>

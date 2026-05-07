@@ -4,6 +4,8 @@ import { invoiceApi, clientApi, settingsApi, productApi, unitApi } from '../serv
 import { formatCurrency as baseFormat, numberToWords } from '../utils/helpers';
 import { CURRENCIES, CURRENCY_SYMBOLS } from '../utils/currencies';
 import { toast } from 'react-toastify';
+import CurrencySelect from '../components/CurrencySelect';
+import DeleteInvoiceModal from '../components/DeleteInvoiceModal';
 import {
   Plus, Trash2, X, ChevronDown, FileText, 
   Building2, Calendar, Hash, Eye, Check,
@@ -133,10 +135,12 @@ const InvoiceForm = () => {
     const init = async () => {
       try {
         // Individual fetches to prevent one failure from blocking others
+        let settingsData = null;
         try {
           const sRes = await settingsApi.get();
-          const s = sRes.data;
-          if (s) {
+          settingsData = sRes.data;
+          if (settingsData) {
+            const s = settingsData;
             setBilledByDetails({
               businessName: s.businessName || '', 
               country: s.country || 'India', 
@@ -241,13 +245,19 @@ const InvoiceForm = () => {
                 decimals: data.decimals ?? prev.settings.decimals
               }
             }));
-            // For drafts, we want to stay updated with latest settings
-            if (data.status !== 'draft' && data.businessDetails) {
-              setBilledByDetails(data.businessDetails);
-            }
-            if (data.bankDetails) setSelectedBankDetails(data.bankDetails);
             const loadedStatus = data.status || 'draft';
             setInvoiceStatus(loadedStatus);
+
+            // For drafts, we want to stay updated with latest bank/business settings
+            if (loadedStatus !== 'draft') {
+              if (data.businessDetails) setBilledByDetails(data.businessDetails);
+              if (data.bankDetails) setSelectedBankDetails(data.bankDetails);
+            } else if (settingsData) {
+              // If it's a draft, ensure we pick the fresh bank details for the loaded currency
+              const freshBank = (settingsData.bankAccounts || []).find(b => b.currency === (data.currency || 'USD'));
+              if (freshBank) setSelectedBankDetails(freshBank);
+              else setSelectedBankDetails(null);
+            }
             
             const searchId = data.clientId || data.clientDetails?.id;
             if (searchId) {
@@ -658,24 +668,17 @@ const InvoiceForm = () => {
               <div className="flex flex-col">
                 <label className="text-[11px] font-bold text-[#6B7280] uppercase tracking-[1.5px]">Currency *</label>
                 <div className="relative mt-1">
-                  <select 
-                    className={`w-[320px] h-10 border border-[#E4E4E0] rounded-[5px] px-3 text-[13px] font-bold text-[#0C0E10] outline-none appearance-none bg-white ${isSubmitted ? 'cursor-default bg-[#FAFAF8]' : 'focus:border-[#95BF47] cursor-pointer'}`}
+                  <CurrencySelect 
+                    className="w-[320px] mt-1"
                     value={form.settings.currency}
                     disabled={isSubmitted}
-                      onChange={e => {
-                        const val = e.target.value;
-                        setForm({...form, settings: {...form.settings, currency: val, currencySymbol: CURRENCY_SYMBOLS[val] || '$'}});
-                        // Update bank details based on new currency
-                        const matchingBank = (bankAccounts || []).find(b => b.currency === val);
-                        setSelectedBankDetails(matchingBank || null);
-                      }}
-                  >
-                    {CURRENCIES.map(curr => (
-                      <option key={curr.code} value={curr.code}>
-                        {curr.name} ({curr.code}, {curr.symbol})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={val => {
+                      setForm({...form, settings: {...form.settings, currency: val, currencySymbol: CURRENCY_SYMBOLS[val] || '$'}});
+                      // Update bank details based on new currency
+                      const matchingBank = (bankAccounts || []).find(b => b.currency === val);
+                      setSelectedBankDetails(matchingBank || null);
+                    }}
+                  />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] pointer-events-none">⌄</span>
                 </div>
               </div>
