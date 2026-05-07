@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, Copy, CheckCircle
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import ConfirmDialog from '../components/ConfirmDialog';
+import DeleteInvoiceModal from '../components/DeleteInvoiceModal';
 
 const STATUSES = [
   { key: 'all',   label: 'All' },
@@ -79,10 +79,11 @@ const InvoiceList = ({ type = 'invoice' }) => {
     setDeleteDialog({ isOpen: true, id, num });
   };
 
-  const confirmDelete = async () => {
+  const confirmDelete = async (reason) => {
     try {
-      await invoiceApi.delete(deleteDialog.id);
-      toast.success('Invoice deleted');
+      await invoiceApi.delete(deleteDialog.id, { reason });
+      toast.success('Invoice deleted and archived');
+      setDeleteDialog({ ...deleteDialog, isOpen: false });
       fetchInvoices();
     } catch { toast.error('Delete failed'); }
   };
@@ -339,13 +340,11 @@ const InvoiceList = ({ type = 'invoice' }) => {
 
       </div>
 
-      <ConfirmDialog 
+      <DeleteInvoiceModal 
         isOpen={deleteDialog.isOpen}
         onClose={() => setDeleteDialog({ ...deleteDialog, isOpen: false })}
         onConfirm={confirmDelete}
-        title="Delete Invoice"
-        message={`Are you sure you want to delete invoice ${deleteDialog.num}? This action cannot be undone.`}
-        confirmText="Delete Invoice"
+        invoiceNumber={deleteDialog.num}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-const { Invoice, Client, Settings } = require('../models');
+const { Invoice, Client, Settings, DeletedInvoice } = require('../models');
 const { CURRENCY_SYMBOLS } = require('../utils/currencies');
 const { Op } = require('sequelize');
 const puppeteer = require('puppeteer');
@@ -164,13 +164,29 @@ const updateInvoice = async (req, res) => {
 
 const deleteInvoice = async (req, res) => {
   try {
+    const { reason } = req.body;
     const invoice = await Invoice.findOne({
       where: { id: req.params.id }
     });
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     
+    // Create audit record
+    await DeletedInvoice.create({
+      originalId: invoice.id,
+      userId: invoice.userId,
+      clientId: invoice.clientId,
+      invoiceNumber: invoice.invoiceNumber,
+      invoiceDate: invoice.invoiceDate,
+      clientName: invoice.clientName,
+      total: invoice.total,
+      currency: invoice.currency,
+      fullData: invoice.toJSON(),
+      deletionReason: reason || 'No reason provided',
+      deletedBy: req.user.id
+    });
+
     await invoice.destroy();
-    res.json({ message: 'Invoice deleted' });
+    res.json({ message: 'Invoice deleted and archived' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -40,7 +40,7 @@ export const clientApi = {
   getById: (id) => api.get(`/clients/${id}`),
   create: (data) => api.post('/clients', data),
   update: (id, data) => api.put(`/clients/${id}`, data),
-  delete: (id) => api.delete(`/clients/${id}`),
+  delete: (id, data) => api.delete(`/clients/${id}`, { data }),
 };
 
 // Invoices
@@ -49,7 +49,7 @@ export const invoiceApi = {
   getById: (id) => api.get(`/invoices/${id}`),
   create: (data) => api.post('/invoices', data),
   update: (id, data) => api.put(`/invoices/${id}`, data),
-  delete: (id) => api.delete(`/invoices/${id}`),
+  delete: (id, data) => api.delete(`/invoices/${id}`, { data }),
   generateNumber: () => api.get('/invoices/generate-number'),
   downloadPDF: (id) => api.get(`/invoices/${id}/pdf`, { responseType: 'blob' }),
   duplicate: (id) => api.post(`/invoices/${id}/duplicate`),
