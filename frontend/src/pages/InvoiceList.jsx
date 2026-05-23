@@ -256,18 +256,18 @@ const InvoiceList = ({ type = 'invoice' }) => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full text-left" style={{ minWidth: '1000px' }}>
                 <thead className="bg-[#02172E] text-white">
                   <tr>
-                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[60px]">#</th>
-                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[180px]">Invoice No</th>
-                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider">Client Name</th>
-                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[140px]">Issue Date</th>
-                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[140px]">Due Date</th>
-                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[160px] text-right">Amount</th>
-                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[140px]">Status</th>
-                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[140px]">Payment</th>
-                    <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider w-[150px] text-center">Actions</th>
+                    <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider w-[50px]">#</th>
+                    <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider w-[150px]">Invoice No</th>
+                    <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider">Client Name</th>
+                    <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider w-[110px]">Issue Date</th>
+                    <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider w-[110px]">Due Date</th>
+                    <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider w-[130px] text-right">Amount</th>
+                    <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider w-[110px]">Status</th>
+                    <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider w-[110px]">Payment</th>
+                    <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider w-[140px] text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E4E4E0]">
@@ -277,23 +277,23 @@ const InvoiceList = ({ type = 'invoice' }) => {
                         className="hover:bg-[#F3F8E8] transition-all group cursor-pointer"
                         onClick={() => navigate(type === 'proforma' ? `/proforma-invoices/${inv.id || inv._id}/edit` : `/invoices/${inv.id || inv._id}/edit`)}
                       >
-                      <td className="px-6 py-4 text-[13px] font-bold text-[#6B7280]">{(currentPage - 1) * 10 + index + 1}</td>
-                      <td className="px-6 py-4 text-[14px] font-bold text-[#0C0E10] whitespace-nowrap">{inv.invoiceNumber}</td>
-                      <td className="px-6 py-4 text-[14px] text-[#0C0E10]">{inv.clientName || 'Draft'}</td>
-                      <td className="px-6 py-4 text-[13px] text-[#6B7280]">{formatDate(inv.invoiceDate)}</td>
-                      <td className="px-6 py-4 text-[13px] text-[#6B7280]">{formatDate(inv.dueDate)}</td>
-                      <td className="px-6 py-4 text-[14px] font-bold text-[#0C0E10] text-right">{formatCurrency(inv.total, inv.currency)}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3 text-[13px] font-bold text-[#6B7280]">{(currentPage - 1) * 10 + index + 1}</td>
+                      <td className="px-4 py-3 text-[14px] font-bold text-[#0C0E10] whitespace-nowrap">{inv.invoiceNumber}</td>
+                      <td className="px-4 py-3 text-[14px] text-[#0C0E10]">{inv.clientName || 'Draft'}</td>
+                      <td className="px-4 py-3 text-[13px] text-[#6B7280]">{formatDate(inv.invoiceDate)}</td>
+                      <td className="px-4 py-3 text-[13px] text-[#6B7280]">{formatDate(inv.dueDate)}</td>
+                      <td className="px-4 py-3 text-[14px] font-bold text-[#0C0E10] text-right">{formatCurrency(inv.total, inv.currency)}</td>
+                      <td className="px-4 py-3">
                         <span className={`status-badge ${getStatusClass(inv.status)}`}>
                           {getStatusLabel(inv.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3">
                         <span className={`status-badge ${getPaymentStatusClass(inv.paymentStatus)}`}>
                           {getPaymentStatusLabel(inv.paymentStatus)}
                         </span>
                       </td>
-                      <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-1 transition-all">
                           <button onClick={() => navigate(type === 'proforma' ? `/proforma-invoices/${inv.id || inv._id}` : `/invoices/${inv.id || inv._id}`)} className="p-1.5 text-[#6B7280] hover:text-[#95BF47] hover:bg-[#F3F8E8] rounded-md transition-all" title="View"><Eye size={16}/></button>
                           <button onClick={(e) => handleDownload(inv.id || inv._id, inv.invoiceNumber, e)} className="p-1.5 text-[#6B7280] hover:text-[#95BF47] hover:bg-[#F3F8E8] rounded-md transition-all" title="Download">{downloading===(inv.id || inv._id) ? <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-[#95BF47] rounded-full animate-spin"/> : <Download size={16}/>}</button>

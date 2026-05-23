@@ -27,9 +27,8 @@ const Login = () => {
       <div className="flex flex-1 overflow-hidden w-full">
         {/* LEFT SECTION */}
         <div className="hidden lg:flex w-[42%] bg-[#02172E] flex-col p-8 relative overflow-hidden">
-          <div className="flex items-center gap-2 mb-3">
-            <Zap className="text-[#95BF47]" size={20} />
-            <span className="text-[11px] font-bold text-white tracking-[3px] uppercase">Nxt Invoice</span>
+          <div className="mb-3">
+            <span className="text-[16px] font-bold text-white tracking-[3px] uppercase">Altius Technologies</span>
           </div>
           <div className="w-10 h-[2px] bg-[#95BF47] mb-12"></div>
           
@@ -50,7 +49,7 @@ const Login = () => {
             </div>
           </div>
           
-          <div className="text-[11px] text-white/25 uppercase tracking-wider">© 2026 AltiusNxt. All rights reserved.</div>
+          <div className="text-[11px] text-white/25 uppercase tracking-wider">© 2026 Altius Technologies. All rights reserved.</div>
         </div>
 
         {/* RIGHT SECTION */}
@@ -61,7 +60,7 @@ const Login = () => {
 
           <div className="flex-1 flex items-center justify-center">
             <div className="w-full max-w-[400px]">
-              <Zap className="text-[#95BF47] mx-auto mb-4" size={28} />
+              <img src="/logo-symbol.png" alt="Altius Logo" className="w-[80px] h-[80px] mx-auto mb-6 object-contain" />
               <h2 className="text-[30px] font-bold text-[#0C0E10] text-center font-serif">Welcome back.</h2>
               <p className="text-[14px] text-[#6B7280] text-center mt-1 mb-10">Sign in to your account</p>
 

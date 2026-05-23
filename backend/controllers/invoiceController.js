@@ -218,8 +218,13 @@ const downloadInvoicePDF = async (req, res) => {
 
     const html = generateInvoiceHTML(invoice, settings);
     browser = await puppeteer.launch({
-      headless: "new",
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
     });
 
     const page = await browser.newPage();
@@ -233,14 +238,20 @@ const downloadInvoicePDF = async (req, res) => {
       margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' },
       preferCSSPageSize: true
     });
-
     await browser.close();
     res.contentType('application/pdf');
     const safeFilename = `Invoice_${invoice.invoiceNumber.replace(/[/\\?%*:|"<>]/g, '_')}.pdf`;
     res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
     res.send(Buffer.from(pdf));
   } catch (error) {
-    if (browser) await browser.close();
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (e) {
+        console.error('Error closing browser:', e.message);
+      }
+    }
+    console.error('❌ PDF Generation failed error:', error);
     res.status(500).send(`Error generating PDF: ${error.message}`);
   }
 };
@@ -295,7 +306,18 @@ const numberToWords = (num, currency = 'INR') => {
 const generateInvoiceHTML = (invoice, settings = {}) => {
   const snapshot = invoice.business || invoice.businessDetails || {};
   // Use settings from profile as the base, then override with any snapshot data if it exists
-  const biz = { ...settings?.dataValues, ...snapshot };
+  const settingsData = settings && typeof settings.get === 'function' ? settings.get({ plain: true }) : settings;
+  const biz = { ...settingsData, ...snapshot };
+  
+  let bankAccounts = biz.bankAccounts || [];
+  if (typeof bankAccounts === 'string') {
+    try {
+      bankAccounts = JSON.parse(bankAccounts);
+    } catch (e) {
+      bankAccounts = [];
+    }
+  }
+  
   const clnt = invoice.client || invoice.clientDetails || {};
   const items = invoice.items || [];
   const terms = invoice.terms || [];
@@ -381,8 +403,8 @@ const generateInvoiceHTML = (invoice, settings = {}) => {
 
   // Get correct bank details based on currency
   const selectedBank = isDraft
-    ? ((biz.bankAccounts || []).find(b => b.currency === currency) || null)
-    : (invoice.bankDetails || (biz.bankAccounts || []).find(b => b.currency === currency) || null);
+    ? ((bankAccounts || []).find(b => b.currency === currency) || null)
+    : (invoice.bankDetails || (bankAccounts || []).find(b => b.currency === currency) || null);
 
   const bankDetails = selectedBank ? [
     { label: 'Account Name', val: selectedBank.accountName || (selectedBank.currency ? biz.businessName : '') },

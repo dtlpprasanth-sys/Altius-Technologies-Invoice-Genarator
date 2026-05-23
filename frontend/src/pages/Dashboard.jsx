@@ -42,7 +42,7 @@ const Dashboard = () => {
     }
 
     const drafts    = filtered.filter(i => i.status?.toLowerCase() === 'draft');
-    const submitted = filtered.filter(i => i.status?.toLowerCase() === 'sent');
+    const submitted = filtered.filter(i => i.status?.toLowerCase() === 'sent' || i.status?.toLowerCase() === 'paid');
     
     const revenue  = submitted.reduce((s, i) => s + (Number(i.totalInINR) || 0), 0);
     const pendAmt  = drafts.reduce((s, i) => s + (Number(i.totalInINR) || 0), 0);
@@ -129,7 +129,7 @@ const Dashboard = () => {
       // Check if this invoice fits in our chart data points
       const target = dataPoints.find(m => m.month === imonth && m.year === iyear);
       
-      if (target && i.status?.toLowerCase() === 'sent') {
+      if (target && (i.status?.toLowerCase() === 'sent' || i.status?.toLowerCase() === 'paid')) {
         // If a month is selected, we might want to only show that month, 
         // but usually charts show the surrounding context. 
         // For now, let's just sum it up if it matches.
@@ -141,6 +141,10 @@ const Dashboard = () => {
 
     setChartData(dataPoints.map(m => ({ name: m.name, revenue: m.revenue })));
   }, [allInvoices, timeRange, selectedYear, selectedMonth]);
+
+  const maxRevenue = React.useMemo(() => {
+    return Math.max(...chartData.map(d => d.revenue || 0), 0);
+  }, [chartData]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-[#FAFAF8]">
@@ -251,8 +255,19 @@ const Dashboard = () => {
                       axisLine={false} 
                       tickLine={false} 
                       tick={{ fill: '#6B7280', fontSize: 11, fontWeight: 600 }} 
-                      tickFormatter={(val) => `₹${Math.round(val/100000)}L`}
-                      domain={[0, (dataMax) => Math.max(dataMax || 0, 500000)]}
+                      tickFormatter={(val) => {
+                        if (maxRevenue < 100000) {
+                          if (val >= 1000) return `₹${Math.round(val/1000)}K`;
+                          return `₹${val}`;
+                        }
+                        return `₹${(val/100000).toFixed(1)}L`;
+                      }}
+                      domain={[0, (dataMax) => {
+                        if (dataMax <= 0) return 50000;
+                        const digits = Math.pow(10, Math.floor(Math.log10(dataMax)));
+                        const rounded = Math.ceil(dataMax / digits) * digits;
+                        return Math.max(rounded, 5000);
+                      }]}
                       tickCount={6}
                       interval={0}
                     />

@@ -10,7 +10,7 @@ import {
   Plus, Trash2, X, ChevronDown, FileText, 
   Building2, Calendar, Hash, Eye, Check,
   Zap, PlusCircle, ImagePlus, Globe, Mail, Phone, MapPin, 
-  Briefcase, Landmark, Info, AlertCircle
+  Briefcase, Landmark, Info, AlertCircle, Box
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ClientRegistrationModal from '../components/ClientRegistrationModal';
@@ -800,7 +800,8 @@ const InvoiceForm = () => {
                               </div>
                             )}
                             <div className="p-2 bg-[#FAFAF8] border-t border-[#E4E4E0]">
-                              <button 
+                              <button
+                                type="button"
                                 className="w-full py-2 text-[12px] font-bold text-[#95BF47] hover:bg-white rounded-[4px] border border-dashed border-[#95BF47]/30 transition-all flex items-center justify-center gap-2"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -816,7 +817,7 @@ const InvoiceForm = () => {
                         )}
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Unit</span>
+                        <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Uom</span>
                         <select 
                           className="h-8 border border-[#E4E4E0] rounded-[4px] px-2 text-[12px] font-medium text-[#0C0E10] outline-none bg-white disabled:bg-[#FAFAF8] disabled:cursor-default"
                           value={item.unit || 'Product'}
@@ -843,7 +844,8 @@ const InvoiceForm = () => {
                           {!isSubmitted && <option value="CUSTOM">+ Custom</option>}
                         </select>
                       </div>
-                    </td>
+                    
+</td>
                     <td className="p-4 px-3">
                       <input 
                         className="w-full text-[14px] text-[#6B7280] text-center outline-none bg-transparent disabled:cursor-default"
@@ -1179,7 +1181,7 @@ const InvoiceForm = () => {
             </div>
             <form onSubmit={handleCustomUnitSubmit} className="p-6 space-y-4">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">Unit Name</label>
+                <label className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">Uom Name</label>
                 <input 
                   autoFocus
                   className="w-full h-11 border border-[#95BF47] rounded-[5px] px-3 text-[14px] font-medium text-[#0C0E10] outline-none"
